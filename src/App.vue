@@ -19,19 +19,7 @@
 						:loading="isHotelsLoading"
 					/>
 				</div>
-				<Button
-					type="button"
-					icon="pi pi-share-alt"
-					severity="contrast"
-					text
-					rounded
-					aria-label="Compartir"
-				/>
-				<Button
-					type="button"
-					label="Compartir"
-					class="hotel-share-button"
-				/>
+				
 				<Button
 					type="button"
 					label="Cerrar sesion"
