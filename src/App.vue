@@ -2,7 +2,7 @@
 	<div v-if="isProtectedRoute" class="hotel-shell h-screen overflow-hidden text-slate-100">
 		<header class="hotel-topbar flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
 			<div class="flex items-center gap-3 text-sm text-white/80">
-				<span class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold tracking-[0.2em] text-white">IA</span>
+				<span class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold tracking-[0.2em] text-white">PERSIST.NET - Hotel Management System</span>
 			</div>
 
 
