@@ -102,6 +102,7 @@ export function useReservationManagement() {
           fechaEntrada: formValues.fechaEntrada,
           fechaSalida: formValues.fechaSalida,
           estadoReservaId: formValues.estadoReservaId,
+          regimenId: formValues.regimenId,
         }),
       })
 
@@ -132,7 +133,7 @@ export function useReservationManagement() {
           fechaEntrada: formValues.fechaEntrada,
           fechaSalida: formValues.fechaSalida,
           regimenId: formValues.regimenId,
-          estadoReservaId: formValues.estadoReservaId,
+          estadoReservaId: formValues.estadoReservaId
         }),
       })
 
