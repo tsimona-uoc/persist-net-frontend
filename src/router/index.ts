@@ -8,6 +8,7 @@ import LoginView from '../views/LoginView.vue'
 import PlanningView from '../views/PlanningView.vue'
 import ReservationsView from '../views/ReservationsView.vue'
 import RoomsView from '../views/RoomsView.vue'
+import StaysView from '../views/StaysView.vue'
 import SystemSettingsView from '../views/SystemSettingsView.vue'
 
 const { isAuthenticated } = useAuth()
@@ -70,6 +71,15 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         section: 'reservas',
+      },
+    },
+    {
+      path: '/estancias',
+      name: 'estancias',
+      component: StaysView,
+      meta: {
+        requiresAuth: true,
+        section: 'estancias',
       },
     },
     {

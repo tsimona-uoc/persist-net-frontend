@@ -113,6 +113,7 @@ const navigationItems = [
 	{ label: 'Habitaciones', to: '/habitaciones', icon: 'pi-home' },
 	{ label: 'Clientes', to: '/clientes', icon: 'pi-users' },
 	{ label: 'Reservas', to: '/reservas', icon: 'pi-bookmark' },
+	{ label: 'Estancias', to: '/estancias', icon: 'pi-briefcase' },
 	{ label: 'Facturacion', to: '/facturacion', icon: 'pi-credit-card' },
 	{ label: 'Parametros', to: '/parametros', icon: 'pi-cog' },
 ]

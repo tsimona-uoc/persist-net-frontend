@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { extractCollection, readNumber, readString } from '../lib/backend'
-import { useApi } from './useApi'
+import { ApiError, useApi } from './useApi'
 import { useHotelData, type HotelReservation } from './useHotelData'
 
 export interface ReservationOption {
@@ -22,6 +22,14 @@ export interface ReservationFormValues {
 
 export interface ReservationStateOption extends ReservationOption {
   active: boolean
+}
+
+function getReservationConflictMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof ApiError && error.status === 409) {
+    return 'Conflicto de reserva. La habitacion ya no esta disponible para esas fechas o la reserva entra en conflicto con otra existente.'
+  }
+
+  return error instanceof Error ? error.message : fallbackMessage
 }
 
 function toDateInputValue(value: string): string {
@@ -108,7 +116,7 @@ export function useReservationManagement() {
 
       await hotelData.refresh()
     } catch (error) {
-      saveError.value = error instanceof Error ? error.message : 'No se pudo crear la reserva.'
+      saveError.value = getReservationConflictMessage(error, 'No se pudo crear la reserva.')
       throw error
     } finally {
       isSaving.value = false
@@ -139,7 +147,7 @@ export function useReservationManagement() {
 
       await hotelData.refresh()
     } catch (error) {
-      saveError.value = error instanceof Error ? error.message : 'No se pudo actualizar la reserva.'
+      saveError.value = getReservationConflictMessage(error, 'No se pudo actualizar la reserva.')
       throw error
     } finally {
       isSaving.value = false

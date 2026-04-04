@@ -2,16 +2,19 @@
   <section class="flex h-full min-h-0 flex-col gap-8 text-slate-100">
     <div class="shrink-0">
       <h1 class="text-5xl font-bold tracking-tight text-white">Planning / Calendario</h1>
-      <p class="mt-3 text-2xl font-medium text-slate-400">Vista interactiva de ocupacion tipo Gantt</p>
+      <p class="mt-3 text-2xl font-medium text-slate-400">Vista combinada de reservas y estancias con prioridad operativa de estancia</p>
     </div>
 
     <Card class="hotel-card shrink-0 shadow-sm">
       <template #content>
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex items-center gap-3">
-            <Button icon="pi pi-angle-left" text rounded severity="secondary" />
-            <Button label="Hoy" class="hotel-primary-button" />
-            <Button icon="pi pi-angle-right" text rounded severity="secondary" />
+          <div class="flex flex-wrap items-center gap-3">
+            <Button icon="pi pi-angle-left" class="hotel-outline-button hotel-icon-button" @click="goToPreviousRange" />
+            <Button label="Hoy" class="hotel-primary-button" @click="goToToday" />
+            <Button icon="pi pi-angle-right" class="hotel-outline-button hotel-icon-button" @click="goToNextRange" />
+            <div class="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+              {{ visibleRangeLabel }}
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-5 text-lg text-slate-400">
@@ -44,7 +47,7 @@
               <div :class="['planning-day-header border-b border-r border-white/10 p-4 text-center', day.isToday ? 'planning-today-column' : 'bg-slate-900']">
                 <p class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">{{ day.weekday }}</p>
                 <p class="mt-1 text-3xl font-bold text-white">{{ day.dayNumber }}</p>
-                <p class="mt-1 text-base text-slate-500">mar</p>
+                <p class="mt-1 text-base text-slate-500">{{ day.monthLabel }}</p>
               </div>
             </template>
 
@@ -78,28 +81,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 
+import { useStayManagement } from '../composables/useStayManagement'
 import { parseDate, toDateKey } from '../lib/backend'
-import { useHotelData } from '../composables/useHotelData'
+
+const PLANNING_RANGE_DAYS = 14
+const TODAY_OFFSET = 3
 
 const legends = [
-  { label: 'Confirmada', className: 'bg-emerald-500' },
-  { label: 'Check-in', className: 'bg-blue-500' },
-  { label: 'No-Show', className: 'bg-rose-500' },
+  { label: 'Reserva', className: 'bg-emerald-500' },
+  { label: 'Estancia en curso', className: 'bg-blue-500' },
+  { label: 'Estancia cerrada', className: 'bg-slate-500' },
 ]
 
-const { error, isLoading, reservations, rooms, refresh } = useHotelData()
+const { error, isLoading, refresh, reservations, rooms, stays } = useStayManagement()
 
 const today = new Date()
 today.setHours(0, 0, 0, 0)
 
+const rangeStart = ref(createRangeStart(today))
+
 const days = computed(() => {
-  return Array.from({ length: 14 }, (_, index) => {
-    const day = new Date(today)
-    day.setDate(today.getDate() - 3 + index)
+  return Array.from({ length: PLANNING_RANGE_DAYS }, (_, index) => {
+    const day = new Date(rangeStart.value)
+    day.setDate(rangeStart.value.getDate() + index)
 
     return {
       dayKey: toDateKey(day),
@@ -110,6 +118,22 @@ const days = computed(() => {
       date: day,
     }
   })
+})
+
+const visibleRangeLabel = computed(() => {
+  const start = days.value[0]?.date
+  const end = days.value.at(-1)?.date
+
+  if (!start || !end) {
+    return ''
+  }
+
+  const formatter = new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  })
+
+  return `${formatter.format(start)} - ${formatter.format(end)}`
 })
 
 const planningBookings = computed(() => {
@@ -123,7 +147,15 @@ const planningBookings = computed(() => {
   const visibleEndPlusOne = new Date(visibleEnd)
   visibleEndPlusOne.setDate(visibleEndPlusOne.getDate() + 1)
 
-  return reservations.value.flatMap((reservation) => {
+  const staysByReservationId = new Map(
+    stays.value.filter((stay) => stay.reservationId !== null).map((stay) => [stay.reservationId as number, stay]),
+  )
+
+  const reservationBookings = reservations.value.flatMap((reservation) => {
+    if (staysByReservationId.has(reservation.id)) {
+      return []
+    }
+
     const startDate = parseDate(reservation.checkIn)
     const endDate = parseDate(reservation.checkOut)
 
@@ -141,23 +173,80 @@ const planningBookings = computed(() => {
       1,
       Math.ceil((visibleBookingEnd.getTime() - visibleBookingStart.getTime()) / (1000 * 60 * 60 * 24)),
     )
-    const statusName = reservation.statusName.toLowerCase()
 
     return [
       {
-        id: reservation.id,
+        id: `reservation-${reservation.id}`,
         roomId: reservation.roomId,
         guest: reservation.guestName,
         startKey: toDateKey(visibleBookingStart),
         span,
-        className: statusName.includes('no-show') ? 'bg-rose-500' : statusName.includes('check') ? 'bg-blue-500' : 'bg-emerald-500',
+        className: 'bg-emerald-500',
       },
     ]
   })
+
+  const stayBookings = stays.value.flatMap((stay) => {
+    const startDate = parseDate(stay.checkIn)
+    const reservationEndDate = stay.reservationId !== null ? parseDate(reservations.value.find((reservation) => reservation.id === stay.reservationId)?.checkOut ?? '') : null
+    const endDate = stay.checkOut ? parseDate(stay.checkOut) : reservationEndDate ?? visibleEndPlusOne
+
+    if (!startDate || !endDate || stay.roomId === null) {
+      return []
+    }
+
+    if (endDate <= visibleStart || startDate >= visibleEndPlusOne) {
+      return []
+    }
+
+    const visibleBookingStart = startDate < visibleStart ? visibleStart : startDate
+    const visibleBookingEnd = endDate > visibleEndPlusOne ? visibleEndPlusOne : endDate
+    const span = Math.max(
+      1,
+      Math.ceil((visibleBookingEnd.getTime() - visibleBookingStart.getTime()) / (1000 * 60 * 60 * 24)),
+    )
+    const statusName = stay.statusName.toLowerCase()
+
+    return [
+      {
+        id: `stay-${stay.id}`,
+        roomId: stay.roomId,
+        guest: stay.guestName,
+        startKey: toDateKey(visibleBookingStart),
+        span,
+        className: statusName.includes('cerr') || statusName.includes('final') ? 'bg-slate-500' : statusName.includes('check') || statusName.includes('act') ? 'bg-blue-500' : 'bg-emerald-500',
+      },
+    ]
+  })
+
+  return [...reservationBookings, ...stayBookings]
 })
 
 function getBookings(roomId: number, dayKey: string) {
   return planningBookings.value.filter((booking) => booking.roomId === roomId && booking.startKey === dayKey)
+}
+
+function createRangeStart(baseDate: Date) {
+  const nextStart = new Date(baseDate)
+  nextStart.setHours(0, 0, 0, 0)
+  nextStart.setDate(baseDate.getDate() - TODAY_OFFSET)
+  return nextStart
+}
+
+function goToPreviousRange() {
+  const nextStart = new Date(rangeStart.value)
+  nextStart.setDate(nextStart.getDate() - PLANNING_RANGE_DAYS)
+  rangeStart.value = nextStart
+}
+
+function goToNextRange() {
+  const nextStart = new Date(rangeStart.value)
+  nextStart.setDate(nextStart.getDate() + PLANNING_RANGE_DAYS)
+  rangeStart.value = nextStart
+}
+
+function goToToday() {
+  rangeStart.value = createRangeStart(today)
 }
 
 onMounted(() => {

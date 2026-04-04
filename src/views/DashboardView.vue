@@ -28,9 +28,9 @@
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 text-emerald-600">
               <i class="pi pi-sign-in text-xl"></i>
-              <span class="text-3xl font-bold text-white">Llegadas de Hoy</span>
+              <span class="text-3xl font-bold text-white">Check-in de Hoy</span>
             </div>
-            <RouterLink to="/planning" class="text-lg font-semibold text-cyan-300 hover:text-cyan-200">Ver Planning <i class="pi pi-arrow-right"></i></RouterLink>
+            <RouterLink to="/estancias" class="text-lg font-semibold text-cyan-300 hover:text-cyan-200">Ver Estancias <i class="pi pi-arrow-right"></i></RouterLink>
           </div>
         </template>
         <template #content>
@@ -42,24 +42,24 @@
             Cargando llegadas desde la API...
           </div>
 
-          <div v-else-if="arrivalsToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
-            No hay llegadas previstas para hoy.
+          <div v-else-if="checkInsToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            No hay check-ins registrados para hoy.
           </div>
 
           <div v-else class="space-y-4">
             <article
-              v-for="arrival in arrivalsToday"
-              :key="arrival.id"
+              v-for="stay in checkInsToday"
+              :key="stay.id"
               class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-5"
             >
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 class="text-2xl font-bold text-white">{{ arrival.guestName }}</h3>
-                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ arrival.roomNumber }} · {{ arrival.roomType }}</p>
-                  <p class="mt-4 text-xl text-slate-400">Estancia {{ arrival.stayLabel }}</p>
-                  <p class="mt-3 text-lg italic text-slate-500">{{ arrival.totalLabel }}</p>
+                  <h3 class="text-2xl font-bold text-white">{{ stay.guestName }}</h3>
+                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ stay.roomNumber }} · {{ stay.roomType }}</p>
+                  <p class="mt-4 text-xl text-slate-400">Estancia {{ stay.stayPeriodLabel }}</p>
+                  <p class="mt-3 text-lg italic text-slate-500">{{ stay.reservationLabel }}</p>
                 </div>
-                <Tag severity="success" :value="arrival.statusName" rounded class="hotel-tag-success" />
+                <Tag severity="success" :value="stay.statusName" rounded class="hotel-tag-success" />
               </div>
             </article>
           </div>
@@ -71,7 +71,7 @@
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 text-orange-500">
               <i class="pi pi-sign-out text-xl"></i>
-              <span class="text-3xl font-bold text-white">Salidas de Hoy</span>
+              <span class="text-3xl font-bold text-white">Check-out de Hoy</span>
             </div>
             <RouterLink to="/facturacion" class="text-lg font-semibold text-cyan-300 hover:text-cyan-200">Ver Facturacion <i class="pi pi-arrow-right"></i></RouterLink>
           </div>
@@ -85,24 +85,24 @@
             Cargando salidas desde la API...
           </div>
 
-          <div v-else-if="departuresToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
-            No hay salidas previstas para hoy.
+          <div v-else-if="checkOutsToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            No hay check-outs registrados para hoy.
           </div>
 
           <div v-else class="space-y-4">
             <article
-              v-for="departure in departuresToday"
-              :key="departure.id"
+              v-for="stay in checkOutsToday"
+              :key="stay.id"
               class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-5"
             >
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 class="text-2xl font-bold text-white">{{ departure.guestName }}</h3>
-                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ departure.roomNumber }} · {{ departure.roomType }}</p>
-                  <p class="mt-4 text-xl text-slate-400">Estancia {{ departure.stayLabel }}</p>
-                  <p class="mt-3 text-lg italic text-slate-500">{{ departure.totalLabel }}</p>
+                  <h3 class="text-2xl font-bold text-white">{{ stay.guestName }}</h3>
+                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ stay.roomNumber }} · {{ stay.roomType }}</p>
+                  <p class="mt-4 text-xl text-slate-400">Estancia {{ stay.stayPeriodLabel }}</p>
+                  <p class="mt-3 text-lg italic text-slate-500">{{ stay.reservationLabel }}</p>
                 </div>
-                <Tag severity="info" :value="departure.statusName" rounded class="hotel-tag-info" />
+                <Tag severity="info" :value="stay.statusName" rounded class="hotel-tag-info" />
               </div>
             </article>
           </div>
@@ -119,28 +119,30 @@ import Tag from 'primevue/tag'
 import { RouterLink } from 'vue-router'
 
 import { useHotelData } from '../composables/useHotelData'
+import { useStayManagement } from '../composables/useStayManagement'
 
-const { arrivalsToday, departuresToday, error, isLoading, noShowsToday, occupiedRoomsCount, refresh, rooms, todayLabel } = useHotelData()
+const { noShowsToday, refresh: refreshReservations } = useHotelData()
+const { checkInsToday, checkOutsToday, error, isLoading, occupiedRoomsCount, refresh, rooms, todayLabel } = useStayManagement()
 
 const summaryCards = computed(() => [
   {
     title: 'Ocupacion',
     value: `${occupiedRoomsCount.value} / ${rooms.value.length || 0}`,
-    description: 'Habitaciones ocupadas hoy',
+    description: 'Habitaciones con estancia activa hoy',
     icon: 'pi pi-chart-bar',
     badgeClass: 'bg-blue-50 text-blue-500',
   },
   {
-    title: 'Llegadas Hoy',
-    value: `${arrivalsToday.value.length}`,
-    description: 'Reservas con entrada hoy',
+    title: 'Check-in Hoy',
+    value: `${checkInsToday.value.length}`,
+    description: 'Estancias con entrada real hoy',
     icon: 'pi pi-sign-in',
     badgeClass: 'bg-emerald-50 text-emerald-500',
   },
   {
-    title: 'Salidas Hoy',
-    value: `${departuresToday.value.length}`,
-    description: 'Reservas con salida hoy',
+    title: 'Check-out Hoy',
+    value: `${checkOutsToday.value.length}`,
+    description: 'Estancias con salida real hoy',
     icon: 'pi pi-sign-out',
     badgeClass: 'bg-orange-50 text-orange-500',
   },
@@ -155,5 +157,6 @@ const summaryCards = computed(() => [
 
 onMounted(() => {
   refresh()
+  refreshReservations()
 })
 </script>

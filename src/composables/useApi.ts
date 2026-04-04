@@ -1,6 +1,18 @@
 import { useAuth } from './useAuth'
 import { API_BASE_URL } from '../lib/api-config'
 
+export class ApiError extends Error {
+  status: number
+  payload: unknown
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.payload = payload
+  }
+}
+
 async function parseResponseBody(response: Response): Promise<unknown> {
   const contentType = response.headers.get('content-type') ?? ''
 
@@ -62,7 +74,7 @@ export function useApi() {
         logout()
       }
 
-      throw new Error(getApiErrorMessage(payload, response.status))
+      throw new ApiError(getApiErrorMessage(payload, response.status), response.status, payload)
     }
 
     return payload as T

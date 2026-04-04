@@ -57,7 +57,7 @@ export interface HotelReservation {
   statusTone: string
   checkIn: string
   checkOut: string
-  stayLabel: string
+  reservationPeriodLabel: string
   totalLabel: string
 }
 
@@ -165,7 +165,7 @@ function mapReservations(
       statusTone: normalizeStatusTone(statusName),
       checkIn,
       checkOut,
-      stayLabel: checkIn && checkOut ? `${formatShortDate(checkIn)} - ${formatShortDate(checkOut)}` : 'Fechas pendientes',
+      reservationPeriodLabel: checkIn && checkOut ? `${formatShortDate(checkIn)} - ${formatShortDate(checkOut)}` : 'Fechas pendientes',
       totalLabel: totalAmount !== null ? formatCurrency(totalAmount) : 'Sin tarifa',
     }
   })

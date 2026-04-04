@@ -93,10 +93,10 @@
                 </template>
               </Column>
 
-              <Column header="ESTANCIA">
+              <Column header="PERIODO RESERVA">
                 <template #body="slotProps">
                   <div>
-                    <p class="font-semibold text-slate-200">{{ slotProps.data.stayLabel }}</p>
+                    <p class="font-semibold text-slate-200">{{ slotProps.data.reservationPeriodLabel }}</p>
                     <p class="text-sm text-slate-500">Entrada {{ slotProps.data.checkIn || '--' }}</p>
                   </div>
                 </template>
