@@ -98,9 +98,9 @@ function mapRooms(
   roomTypeNames: Map<number, string>,
   roomStateNames: Map<number, string>,
 ): HotelRoom[] {
-  return extractCollection(payload).map((item) => {
-    const typeId = readNumber(item, 'tipoHabitacionId')
-    const stateId = readNumber(item, 'estadoHabitacionId')
+  return extractCollection(payload).map((item:any) => {
+    const typeId = readNumber(item.tipoHabitacion, 'id')
+    const stateId = readNumber(item.estadoHabitacion, 'id')
     const floor = readString(item, 'planta') || `${readNumber(item, 'piso', 'planta') ?? ''}`.trim()
     const statusName = stateId !== null ? roomStateNames.get(stateId) ?? 'Sin estado' : 'Sin estado'
 
