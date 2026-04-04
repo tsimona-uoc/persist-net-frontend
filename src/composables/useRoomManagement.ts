@@ -12,6 +12,11 @@ export interface RoomCatalogOption {
   active: boolean
 }
 
+function isFreeRoomStateLabel(label: string) {
+  const normalizedLabel = label.trim().toLowerCase()
+  return normalizedLabel.includes('libre') || normalizedLabel.includes('dispon')
+}
+
 export interface RoomFormValues {
   id?: number
   numero: number
@@ -112,9 +117,17 @@ export function useRoomManagement() {
     saveError.value = null
 
     try {
+      const payload = buildRoomPayload(
+        {
+          ...formValues,
+          estadoHabitacionId: defaultFreeRoomStateId.value ?? formValues.estadoHabitacionId,
+        },
+        selectedHotelId.value,
+      )
+
       await request('/habitacion', {
         method: 'POST',
-        body: JSON.stringify(buildRoomPayload(formValues, selectedHotelId.value)),
+        body: JSON.stringify(payload),
       })
 
       await hotelData.refresh()
@@ -141,9 +154,17 @@ export function useRoomManagement() {
     saveError.value = null
 
     try {
+      const payload = buildRoomPayload(
+        {
+          ...formValues,
+          estadoHabitacionId: defaultFreeRoomStateId.value ?? formValues.estadoHabitacionId,
+        },
+        selectedHotelId.value,
+      )
+
       await request(`/habitacion/${formValues.id}`, {
         method: 'PUT',
-        body: JSON.stringify(buildRoomPayload(formValues, selectedHotelId.value)),
+        body: JSON.stringify(payload),
       })
 
       await hotelData.refresh()
@@ -174,14 +195,14 @@ export function useRoomManagement() {
   }
 
   const activeRoomTypes = computed(() => roomTypes.value.filter((type) => type.active))
-  const activeRoomStates = computed(() => roomStates.value.filter((state) => state.active))
+  const defaultFreeRoomStateId = computed(() => roomStates.value.find((state) => isFreeRoomStateLabel(state.label))?.value ?? null)
 
   return {
     ...hotelData,
     roomTypes,
     roomStates,
     activeRoomTypes,
-    activeRoomStates,
+    defaultFreeRoomStateId,
     isSaving,
     saveError,
     refresh,

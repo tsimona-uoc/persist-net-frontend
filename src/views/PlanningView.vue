@@ -136,6 +136,12 @@ const visibleRangeLabel = computed(() => {
   return `${formatter.format(start)} - ${formatter.format(end)}`
 })
 
+function toInclusiveEnd(date: Date) {
+  const nextDate = new Date(date)
+  nextDate.setDate(nextDate.getDate() + 1)
+  return nextDate
+}
+
 const planningBookings = computed(() => {
   const visibleStart = days.value[0]?.date
   const visibleEnd = days.value.at(-1)?.date
@@ -158,17 +164,18 @@ const planningBookings = computed(() => {
 
     const startDate = parseDate(reservation.checkIn)
     const endDate = parseDate(reservation.checkOut)
+    const endDateInclusive = endDate ? toInclusiveEnd(endDate) : null
 
-    if (!startDate || !endDate || reservation.roomId === null) {
+    if (!startDate || !endDateInclusive || reservation.roomId === null) {
       return []
     }
 
-    if (endDate <= visibleStart || startDate >= visibleEndPlusOne) {
+    if (endDateInclusive <= visibleStart || startDate >= visibleEndPlusOne) {
       return []
     }
 
     const visibleBookingStart = startDate < visibleStart ? visibleStart : startDate
-    const visibleBookingEnd = endDate > visibleEndPlusOne ? visibleEndPlusOne : endDate
+    const visibleBookingEnd = endDateInclusive > visibleEndPlusOne ? visibleEndPlusOne : endDateInclusive
     const span = Math.max(
       1,
       Math.ceil((visibleBookingEnd.getTime() - visibleBookingStart.getTime()) / (1000 * 60 * 60 * 24)),
@@ -189,7 +196,8 @@ const planningBookings = computed(() => {
   const stayBookings = stays.value.flatMap((stay) => {
     const startDate = parseDate(stay.checkIn)
     const reservationEndDate = stay.reservationId !== null ? parseDate(reservations.value.find((reservation) => reservation.id === stay.reservationId)?.checkOut ?? '') : null
-    const endDate = stay.checkOut ? parseDate(stay.checkOut) : reservationEndDate ?? visibleEndPlusOne
+    const rawEndDate = stay.checkOut ? parseDate(stay.checkOut) : reservationEndDate
+    const endDate = rawEndDate ? toInclusiveEnd(rawEndDate) : visibleEndPlusOne
 
     if (!startDate || !endDate || stay.roomId === null) {
       return []

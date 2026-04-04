@@ -143,18 +143,6 @@
           />
         </div>
 
-        <div class="space-y-2">
-          <label class="text-sm font-semibold text-slate-300">Estado</label>
-          <Select
-            v-model="form.estadoHabitacionId"
-            :options="activeRoomStates"
-            option-label="label"
-            option-value="value"
-            placeholder="Selecciona estado"
-            class="hotel-select"
-            fluid
-          />
-        </div>
       </div>
 
       <div v-if="saveError" class="mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
@@ -189,10 +177,10 @@ import { buildRoomForm, createEmptyRoomForm, useRoomManagement, type RoomFormVal
 import type { HotelRoom } from '../composables/useHotelData'
 
 const {
-  activeRoomStates,
   activeRoomTypes,
   createRoom,
   deleteRoom,
+  defaultFreeRoomStateId,
   error,
   isLoading,
   isSaving,
@@ -283,8 +271,12 @@ function openCreateDialog() {
 }
 
 function openEditDialog(room: HotelRoom) {
+  const nextFormValues = buildRoomForm(room)
   editingRoomId.value = room.id
-  resetForm(buildRoomForm(room))
+  resetForm({
+    ...nextFormValues,
+    estadoHabitacionId: defaultFreeRoomStateId.value ?? nextFormValues.estadoHabitacionId,
+  })
   isDialogOpen.value = true
 }
 
@@ -295,7 +287,7 @@ function closeDialog() {
 }
 
 async function submitForm() {
-  if (!form.numero || !form.piso.trim() || !form.tipoHabitacionId || !form.estadoHabitacionId) {
+  if (!form.numero || !form.piso.trim() || !form.tipoHabitacionId) {
     return
   }
 
@@ -305,7 +297,7 @@ async function submitForm() {
     piso: form.piso,
     planta: form.planta,
     tipoHabitacionId: form.tipoHabitacionId,
-    estadoHabitacionId: form.estadoHabitacionId,
+    estadoHabitacionId: defaultFreeRoomStateId.value ?? form.estadoHabitacionId,
   }
 
   try {
