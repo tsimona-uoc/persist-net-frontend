@@ -14,7 +14,7 @@ export interface RoomCatalogOption {
 
 export interface RoomFormValues {
   id?: number
-  numero: string
+  numero: number
   piso: string
   planta: string
   tipoHabitacionId: number | null
@@ -23,7 +23,7 @@ export interface RoomFormValues {
 
 export function createEmptyRoomForm(): RoomFormValues {
   return {
-    numero: '',
+    numero: 0,
     piso: '',
     planta: '',
     tipoHabitacionId: null,
@@ -48,7 +48,7 @@ function buildRoomPayload(formValues: RoomFormValues, hotelId: number) {
   const floorLabel = formValues.planta.trim()
   const normalizedFloorLabel = floorLabel || String(normalizedFloorNumber)
   const payload: Record<string, unknown> = {
-    numero: formValues.numero.trim(),
+    numero: formValues.numero,
     piso: normalizedFloorNumber,
     hotelId,
     tipoHabitacionId: formValues.tipoHabitacionId,

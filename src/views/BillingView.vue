@@ -36,7 +36,7 @@
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <p class="text-2xl font-bold text-white">{{ invoice.clientName }}</p>
-                    <p class="mt-1 text-xl text-slate-300">Hab. {{ invoice.roomNumber }}</p>
+                    <p class="mt-1 text-xl text-slate-300">{{ invoice.roomNumber }}</p>
                     <p class="mt-4 text-lg text-slate-400">Factura #{{ invoice.id }} · {{ invoice.totalLabel }}</p>
                   </div>
                   <i v-if="selectedInvoice?.id === invoice.id" class="pi pi-check text-2xl text-cyan-300"></i>

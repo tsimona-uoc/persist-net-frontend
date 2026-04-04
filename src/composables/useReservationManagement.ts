@@ -174,7 +174,7 @@ export function useReservationManagement() {
   const roomOptions = computed<ReservationOption[]>(() => {
     return hotelData.rooms.value.map((room) => ({
       value: room.id,
-      label: `Hab. ${room.number}`,
+      label: String(room.number),
       helper: `${room.typeName} · ${room.statusName}`,
     }))
   })

@@ -77,10 +77,7 @@
 
               <Column header="NUMERO">
                 <template #body="slotProps">
-                  <div>
-                    <p class="text-xl font-bold text-white">{{ slotProps.data.number }}</p>
-                    <p class="mt-1 text-sm text-slate-500">Habitacion #{{ slotProps.data.id }}</p>
-                  </div>
+                  <span class="text-xl font-bold text-white">{{ slotProps.data.number }}</span>
                 </template>
               </Column>
 
@@ -120,7 +117,7 @@
       <div class="hotel-dialog-form grid gap-5 md:grid-cols-2">
         <div class="space-y-2">
           <label class="text-sm font-semibold text-slate-300">Numero</label>
-          <InputText v-model="form.numero" class="hotel-input" fluid placeholder="Ej. 203" />
+          <InputNumber v-model="form.numero" class="hotel-input" fluid placeholder="Ej. 203" />
         </div>
 
         <div class="space-y-2">
@@ -184,6 +181,7 @@ import Dialog from 'primevue/dialog'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 
@@ -297,7 +295,7 @@ function closeDialog() {
 }
 
 async function submitForm() {
-  if (!form.numero.trim() || !form.piso.trim() || !form.tipoHabitacionId || !form.estadoHabitacionId) {
+  if (!form.numero || !form.piso.trim() || !form.tipoHabitacionId || !form.estadoHabitacionId) {
     return
   }
 

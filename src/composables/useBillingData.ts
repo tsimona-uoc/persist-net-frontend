@@ -58,7 +58,7 @@ function createReservationRoomMap(reservationsPayload: unknown, roomsPayload: un
     const roomId = readNumber(room, 'id')
 
     if (roomId !== null) {
-      roomNumbers.set(roomId, readString(room, 'numero', 'number') || `Hab. ${roomId}`)
+      roomNumbers.set(roomId, readString(room, 'numero', 'number') || 'Sin numero')
     }
   }
 
@@ -69,7 +69,7 @@ function createReservationRoomMap(reservationsPayload: unknown, roomsPayload: un
     const roomId = readNumber(reservation, 'habitacionId') ?? readNumber(readObject(reservation, 'habitacion'), 'id')
 
     if (reservationId !== null) {
-      reservationRooms.set(reservationId, roomId !== null ? roomNumbers.get(roomId) ?? 'Sin habitacion' : 'Sin habitacion')
+      reservationRooms.set(reservationId, roomId !== null ? roomNumbers.get(roomId) ?? 'Sin numero' : 'Sin numero')
     }
   }
 

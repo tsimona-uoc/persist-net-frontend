@@ -32,7 +32,7 @@ export interface HotelClient {
 export interface HotelRoom {
   id: number
   hotelId: number | null
-  number: string
+  number: number
   floorNumber: number | null
   floor: string
   floorLabel: string
@@ -51,7 +51,7 @@ export interface HotelReservation {
   statusId: number | null
   regimenId: number | null
   guestName: string
-  roomNumber: string
+  roomNumber: number
   roomType: string
   statusName: string
   statusTone: string
@@ -107,7 +107,7 @@ function mapRooms(
     return {
       id: readNumber(item, 'id') ?? 0,
       hotelId: readNumber(item, 'hotelId') ?? getNestedId(item, 'hotel'),
-      number: readString(item, 'numero', 'number') || `Hab. ${readNumber(item, 'id') ?? ''}`.trim(),
+      number: readNumber(item, 'numero', 'number') || 0,
       floorNumber: readNumber(item, 'piso', 'planta'),
       floor,
       floorLabel: floor || 'Sin planta',
@@ -159,7 +159,7 @@ function mapReservations(
       statusId: stateId,
       regimenId,
       guestName: client?.name || fallbackGuestName || `Cliente ${clientId ?? 'sin id'}`,
-      roomNumber: room?.number || readString(nestedRoom, 'numero', 'number') || 'Sin habitacion',
+      roomNumber: room?.number || readNumber(nestedRoom, 'numero', 'number') || 0,
       roomType: room?.typeName || 'Sin tipo',
       statusName,
       statusTone: normalizeStatusTone(statusName),

@@ -242,6 +242,7 @@ a {
 }
 
 .hotel-input.p-inputtext,
+.hotel-input.p-inputnumber,
 .hotel-select.p-select {
 	background: rgba(15, 23, 42, 0.78);
 	border: 1px solid rgba(255, 255, 255, 0.08);
@@ -252,8 +253,27 @@ a {
 
 .hotel-select .p-select-label,
 .hotel-select .p-select-dropdown,
-.hotel-input.p-inputtext {
+.hotel-input.p-inputtext,
+.hotel-input.p-inputnumber .p-inputtext {
 	color: #f8fafc;
+}
+
+.hotel-input.p-inputnumber {
+	overflow: hidden;
+}
+
+.hotel-input.p-inputnumber .p-inputtext {
+	width: 100%;
+	min-height: 3rem;
+	background: transparent;
+	border: 0;
+	border-radius: 1rem;
+	box-shadow: none;
+	padding-inline: 1rem;
+}
+
+.hotel-input.p-inputnumber .p-inputtext::placeholder {
+	color: #64748b;
 }
 
 .hotel-header-select.p-select {
@@ -299,13 +319,15 @@ a {
 }
 
 .hotel-select:not(.p-disabled):hover,
-.hotel-input.p-inputtext:hover {
+.hotel-input.p-inputtext:hover,
+.hotel-input.p-inputnumber:hover {
 	border-color: rgba(34, 211, 238, 0.35);
 }
 
 .hotel-select.p-focus,
 .hotel-datepicker.p-focus,
-.hotel-input.p-inputtext:focus {
+.hotel-input.p-inputtext:focus,
+.hotel-input.p-inputnumber:focus-within {
 	border-color: rgba(34, 211, 238, 0.5);
 	box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.08);
 	outline: none;
@@ -544,6 +566,26 @@ a {
 	background: rgba(34, 211, 238, 0.12);
 	border-color: rgba(34, 211, 238, 0.35);
 	color: #a5f3fc;
+}
+
+.hotel-textarea.p-textarea {
+	width: 100%;
+	background: rgba(15, 23, 42, 0.78);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	color: #f8fafc;
+	border-radius: 1rem;
+	box-shadow: none;
+	resize: vertical;
+}
+
+.hotel-textarea.p-textarea:hover {
+	border-color: rgba(34, 211, 238, 0.35);
+}
+
+.hotel-textarea.p-textarea:focus {
+	border-color: rgba(34, 211, 238, 0.5);
+	box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.08);
+	outline: none;
 }
 
 .planning-grid {
