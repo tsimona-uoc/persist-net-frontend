@@ -1,3 +1,340 @@
 @import "tailwindcss";
 @import "tailwindcss-primeui";
-@import 'primeicons/primeicons.css'
+@import 'primeicons/primeicons.css';
+
+
+:root {
+	color-scheme: dark;
+	font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+	background:
+		radial-gradient(circle at top, rgba(34, 211, 238, 0.18), transparent 28%),
+		linear-gradient(180deg, #020617 0%, #0f172a 100%);
+	--hotel-surface: #020617;
+	--hotel-border: rgba(255, 255, 255, 0.08);
+	--hotel-panel: rgba(15, 23, 42, 0.78);
+	--hotel-primary: #22d3ee;
+	--hotel-topbar: rgba(2, 6, 23, 0.9);
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
+}
+
+#app {
+	min-height: 100vh;
+}
+
+a {
+	text-decoration: none;
+}
+
+.hotel-shell {
+	background:
+		radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 25%),
+		radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 20%),
+		linear-gradient(180deg, #020617 0%, #081121 100%);
+}
+
+.hotel-topbar {
+	background: var(--hotel-topbar);
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(14px);
+}
+
+.hotel-main {
+	background: transparent;
+	overscroll-behavior: contain;
+}
+
+.hotel-route-view > * {
+	width: 100%;
+	min-height: 0;
+}
+
+.hotel-sidebar {
+	overscroll-behavior: contain;
+}
+
+.hotel-nav-item-active {
+	background: linear-gradient(180deg, rgba(34, 211, 238, 0.22) 0%, rgba(59, 130, 246, 0.2) 100%);
+	box-shadow: inset 0 0 0 1px rgba(103, 232, 249, 0.35), 0 10px 24px rgba(8, 145, 178, 0.16);
+	color: white;
+}
+
+.hotel-card.p-card {
+	border: 1px solid var(--hotel-border);
+	border-radius: 1.75rem;
+	background: var(--hotel-panel);
+	backdrop-filter: blur(16px);
+	box-shadow: 0 20px 50px rgba(2, 6, 23, 0.4);
+}
+
+.hotel-card .p-card-body {
+	padding: 1.6rem;
+}
+
+.hotel-card .p-card-title,
+.hotel-card .p-card-content {
+	color: #e2e8f0;
+}
+
+.hotel-fill-card.p-card {
+	height: 100%;
+}
+
+.hotel-fill-card .p-card-body {
+	display: flex;
+	min-height: 0;
+	flex-direction: column;
+	height: 100%;
+}
+
+.hotel-fill-card .p-card-content {
+	flex: 1;
+	min-height: 0;
+}
+
+.hotel-panel .p-card-title {
+	margin-bottom: 1.25rem;
+}
+
+.hotel-tag-success.p-tag {
+	background: #dcfce7;
+	color: #16a34a;
+	font-weight: 700;
+}
+
+.hotel-tag-info.p-tag {
+	background: #dbeafe;
+	color: #3b82f6;
+	font-weight: 700;
+}
+
+.hotel-primary-button.p-button,
+.hotel-share-button.p-button {
+	background: transparent;
+	border: 1px solid rgba(34, 211, 238, 0.42);
+	color: #67e8f9;
+	border-radius: 1rem;
+	font-weight: 700;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.hotel-primary-button.p-button:not(:disabled):hover,
+.hotel-share-button.p-button:not(:disabled):hover {
+	background: rgba(34, 211, 238, 0.14);
+	border-color: rgba(34, 211, 238, 0.8);
+	color: #a5f3fc;
+	box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
+}
+
+.hotel-logout-button.p-button {
+	background: transparent;
+	border: 1px solid rgba(248, 113, 113, 0.28);
+	color: #fecaca;
+	border-radius: 1rem;
+	font-weight: 700;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.hotel-logout-button.p-button:not(:disabled):hover {
+	background: rgba(239, 68, 68, 0.12);
+	border-color: rgba(248, 113, 113, 0.65);
+	color: #ffe4e6;
+	box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.08);
+}
+
+.hotel-small-button.p-button {
+	padding-inline: 1rem;
+	padding-block: 0.7rem;
+	border-radius: 1rem;
+}
+
+.hotel-success-button.p-button {
+	background: transparent;
+	border: 1px solid rgba(34, 197, 94, 0.4);
+	color: #86efac;
+	border-radius: 1rem;
+	font-weight: 700;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.hotel-success-button.p-button:not(:disabled):hover {
+	background: rgba(34, 197, 94, 0.14);
+	border-color: rgba(74, 222, 128, 0.75);
+	color: #dcfce7;
+	box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.08);
+}
+
+.hotel-outline-button.p-button {
+	background: transparent;
+	border-radius: 1rem;
+	font-weight: 700;
+	border-color: rgba(255, 255, 255, 0.16);
+	color: #e2e8f0;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.hotel-outline-button.p-button:not(:disabled):hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.4);
+	color: white;
+	box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+}
+
+.hotel-search-input.p-inputtext {
+	width: 100%;
+	border-radius: 1.25rem;
+	padding: 1rem 1rem 1rem 2.8rem;
+	font-size: 1.05rem;
+	background: rgba(15, 23, 42, 0.78);
+	border-color: var(--hotel-border);
+	color: #f8fafc;
+	box-shadow: none;
+}
+
+.hotel-search-input.p-inputtext::placeholder {
+	color: #64748b;
+}
+
+.hotel-avatar {
+	background: rgba(34, 211, 238, 0.12);
+	color: #67e8f9;
+}
+
+.hotel-datatable .p-datatable-thead > tr > th {
+	background: rgba(4, 10, 22, 0.98) !important;
+	color: #7f93b2;
+	font-size: 0.82rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	border-color: var(--hotel-border);
+	padding: 1rem 1.25rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	position: sticky;
+	top: 0;
+	z-index: 2;
+}
+
+.hotel-datatable .p-datatable-tbody > tr > td {
+	border-color: var(--hotel-border);
+	padding: 1.15rem 1.25rem;
+	font-size: 1rem;
+	color: #cbd5e1;
+	background: rgba(6, 12, 24, 0.88) !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		transform 160ms ease;
+}
+
+.hotel-datatable .p-datatable-tbody > tr:nth-child(even) > td {
+	background: rgba(9, 16, 30, 0.92) !important;
+}
+
+.hotel-datatable .p-datatable-tbody > tr:hover > td {
+	background: rgba(14, 24, 42, 0.98) !important;
+	border-color: rgba(103, 232, 249, 0.1);
+}
+
+.hotel-datatable .p-datatable-table-container {
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 1.25rem;
+	overflow: auto;
+	background: linear-gradient(180deg, rgba(4, 10, 22, 0.98) 0%, rgba(7, 13, 26, 0.96) 100%);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.hotel-datatable .p-datatable-thead > tr > th:first-child {
+	border-top-left-radius: 1.25rem;
+}
+
+.hotel-datatable .p-datatable-thead > tr > th:last-child {
+	border-top-right-radius: 1.25rem;
+}
+
+.hotel-datatable .p-column-header-content {
+	justify-content: flex-start;
+	gap: 0.45rem;
+}
+
+.hotel-datatable .p-datatable-tbody > tr > td:first-child {
+	padding-left: 1.35rem;
+}
+
+.hotel-datatable .p-datatable-tbody > tr > td:last-child {
+	padding-right: 1.35rem;
+}
+
+.hotel-billing-table .p-datatable-thead > tr > th:nth-child(2),
+.hotel-billing-table .p-datatable-thead > tr > th:nth-child(3),
+.hotel-billing-table .p-datatable-thead > tr > th:nth-child(4),
+.hotel-billing-table .p-datatable-tbody > tr > td:nth-child(2),
+.hotel-billing-table .p-datatable-tbody > tr > td:nth-child(3),
+.hotel-billing-table .p-datatable-tbody > tr > td:nth-child(4) {
+	text-align: right;
+}
+
+.hotel-billing-table .p-datatable-tbody > tr > td:nth-child(5),
+.hotel-billing-table .p-datatable-thead > tr > th:nth-child(5) {
+	text-align: center;
+}
+
+.hotel-billing-table .p-datatable-tbody > tr > td,
+.hotel-billing-table .p-datatable-thead > tr > th {
+	padding-inline: 1rem;
+}
+
+.planning-grid {
+	display: grid;
+	grid-template-columns: 180px repeat(14, minmax(82px, 1fr));
+}
+
+.planning-today-column {
+	background: rgba(14, 116, 144, 0.18);
+}
+
+.planning-booking {
+	height: 2.2rem;
+	border-radius: 0.6rem;
+	padding: 0.45rem 0.75rem;
+	font-size: 0.9rem;
+	font-weight: 700;
+	color: white;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	box-shadow: 0 10px 18px rgba(37, 99, 235, 0.16);
+	position: relative;
+	z-index: 1;
+}
+
+@media (max-width: 1023px) {
+	.hotel-sidebar {
+		width: 100%;
+	}
+
+	.hotel-main {
+		padding-bottom: 2rem;
+	}
+}
