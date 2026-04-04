@@ -1,7 +1,9 @@
 import { computed, ref } from 'vue'
 
+import { API_BASE_URL } from '../lib/api-config'
+
 const AUTH_STORAGE_KEY = 'persist-net-auth-session'
-const LOGIN_URL = 'http://localhost:5156/api/user/login'
+const LOGIN_URL = `${API_BASE_URL}/user/login`
 
 export interface LoginCredentials {
   email: string

@@ -2,7 +2,7 @@
   <section class="flex h-full min-h-0 flex-col gap-8 text-slate-100">
     <div class="shrink-0">
       <h1 class="text-5xl font-bold tracking-tight text-white">Dashboard</h1>
-      <p class="mt-3 text-2xl font-medium text-slate-400">Lunes, 9 de Marzo de 2026</p>
+      <p class="mt-3 text-2xl font-medium text-slate-400">{{ todayLabel }}</p>
     </div>
 
     <div class="grid shrink-0 gap-5 xl:grid-cols-4 md:grid-cols-2">
@@ -34,20 +34,32 @@
           </div>
         </template>
         <template #content>
-          <div class="space-y-4">
+          <div v-if="error" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+            {{ error }}
+          </div>
+
+          <div v-else-if="isLoading" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            Cargando llegadas desde la API...
+          </div>
+
+          <div v-else-if="arrivalsToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            No hay llegadas previstas para hoy.
+          </div>
+
+          <div v-else class="space-y-4">
             <article
-              v-for="arrival in arrivals"
-              :key="arrival.guest"
+              v-for="arrival in arrivalsToday"
+              :key="arrival.id"
               class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-5"
             >
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 class="text-2xl font-bold text-white">{{ arrival.guest }}</h3>
-                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ arrival.room }} · {{ arrival.type }}</p>
-                  <p class="mt-4 text-xl text-slate-400">{{ arrival.guests }} huesped(es) · {{ arrival.price }}/noche</p>
-                  <p v-if="arrival.note" class="mt-3 text-lg italic text-slate-500">{{ arrival.note }}</p>
+                  <h3 class="text-2xl font-bold text-white">{{ arrival.guestName }}</h3>
+                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ arrival.roomNumber }} · {{ arrival.roomType }}</p>
+                  <p class="mt-4 text-xl text-slate-400">Estancia {{ arrival.stayLabel }}</p>
+                  <p class="mt-3 text-lg italic text-slate-500">{{ arrival.totalLabel }}</p>
                 </div>
-                <Tag severity="success" :value="arrival.status" rounded class="hotel-tag-success" />
+                <Tag severity="success" :value="arrival.statusName" rounded class="hotel-tag-success" />
               </div>
             </article>
           </div>
@@ -65,19 +77,32 @@
           </div>
         </template>
         <template #content>
-          <div class="space-y-4">
+          <div v-if="error" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+            {{ error }}
+          </div>
+
+          <div v-else-if="isLoading" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            Cargando salidas desde la API...
+          </div>
+
+          <div v-else-if="departuresToday.length === 0" class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-10 text-center text-slate-400">
+            No hay salidas previstas para hoy.
+          </div>
+
+          <div v-else class="space-y-4">
             <article
-              v-for="departure in departures"
-              :key="departure.guest"
+              v-for="departure in departuresToday"
+              :key="departure.id"
               class="rounded-3xl border border-white/10 bg-slate-900/70 px-5 py-5"
             >
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 class="text-2xl font-bold text-white">{{ departure.guest }}</h3>
-                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ departure.room }} · {{ departure.type }}</p>
-                  <p class="mt-4 text-xl text-slate-400">{{ departure.guests }} huesped(es) · {{ departure.price }}/noche</p>
+                  <h3 class="text-2xl font-bold text-white">{{ departure.guestName }}</h3>
+                  <p class="mt-1 text-xl text-slate-400">Habitacion {{ departure.roomNumber }} · {{ departure.roomType }}</p>
+                  <p class="mt-4 text-xl text-slate-400">Estancia {{ departure.stayLabel }}</p>
+                  <p class="mt-3 text-lg italic text-slate-500">{{ departure.totalLabel }}</p>
                 </div>
-                <Tag severity="info" :value="departure.status" rounded class="hotel-tag-info" />
+                <Tag severity="info" :value="departure.statusName" rounded class="hotel-tag-info" />
               </div>
             </article>
           </div>
@@ -88,70 +113,47 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import { RouterLink } from 'vue-router'
 
-const summaryCards = [
+import { useHotelData } from '../composables/useHotelData'
+
+const { arrivalsToday, departuresToday, error, isLoading, noShowsToday, occupiedRoomsCount, refresh, rooms, todayLabel } = useHotelData()
+
+const summaryCards = computed(() => [
   {
     title: 'Ocupacion',
-    value: '4 / 12',
-    description: 'Habitaciones ocupadas',
+    value: `${occupiedRoomsCount.value} / ${rooms.value.length || 0}`,
+    description: 'Habitaciones ocupadas hoy',
     icon: 'pi pi-chart-bar',
     badgeClass: 'bg-blue-50 text-blue-500',
   },
   {
     title: 'Llegadas Hoy',
-    value: '2',
-    description: 'Reservas pendientes',
+    value: `${arrivalsToday.value.length}`,
+    description: 'Reservas con entrada hoy',
     icon: 'pi pi-sign-in',
     badgeClass: 'bg-emerald-50 text-emerald-500',
   },
   {
     title: 'Salidas Hoy',
-    value: '1',
-    description: 'Check-outs pendientes',
+    value: `${departuresToday.value.length}`,
+    description: 'Reservas con salida hoy',
     icon: 'pi pi-sign-out',
     badgeClass: 'bg-orange-50 text-orange-500',
   },
   {
     title: 'No-Shows',
-    value: '1',
-    description: 'Sin presentarse',
+    value: `${noShowsToday.value.length}`,
+    description: 'Reservas marcadas como no-show',
     icon: 'pi pi-times-circle',
     badgeClass: 'bg-rose-50 text-rose-500',
   },
-]
+])
 
-const arrivals = [
-  {
-    guest: 'Pedro Martinez Ruiz',
-    room: '202',
-    type: 'doble',
-    guests: '2',
-    price: 'EUR95',
-    status: 'Confirmada',
-    note: 'Familia con ninos',
-  },
-  {
-    guest: 'Ana Lopez Perez',
-    room: '203',
-    type: 'familiar',
-    guests: '4',
-    price: 'EUR140',
-    status: 'Confirmada',
-    note: 'Check-in previsto a las 17:00',
-  },
-]
-
-const departures = [
-  {
-    guest: 'Juan Garcia Lopez',
-    room: '101',
-    type: 'individual',
-    guests: '1',
-    price: 'EUR75',
-    status: 'Check-in',
-  },
-]
+onMounted(() => {
+  refresh()
+})
 </script>

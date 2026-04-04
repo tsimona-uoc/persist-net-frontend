@@ -6,6 +6,9 @@ import ClientsView from '../views/ClientsView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import PlanningView from '../views/PlanningView.vue'
+import ReservationsView from '../views/ReservationsView.vue'
+import RoomsView from '../views/RoomsView.vue'
+import SystemSettingsView from '../views/SystemSettingsView.vue'
 
 const { isAuthenticated } = useAuth()
 
@@ -52,12 +55,39 @@ const router = createRouter({
       },
     },
     {
+      path: '/habitaciones',
+      name: 'habitaciones',
+      component: RoomsView,
+      meta: {
+        requiresAuth: true,
+        section: 'habitaciones',
+      },
+    },
+    {
+      path: '/reservas',
+      name: 'reservas',
+      component: ReservationsView,
+      meta: {
+        requiresAuth: true,
+        section: 'reservas',
+      },
+    },
+    {
       path: '/facturacion',
       name: 'facturacion',
       component: BillingView,
       meta: {
         requiresAuth: true,
         section: 'facturacion',
+      },
+    },
+    {
+      path: '/parametros',
+      name: 'parametros',
+      component: SystemSettingsView,
+      meta: {
+        requiresAuth: true,
+        section: 'parametros',
       },
     },
   ],

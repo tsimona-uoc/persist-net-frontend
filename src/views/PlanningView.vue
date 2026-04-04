@@ -27,7 +27,15 @@
     <Card class="hotel-card hotel-fill-card min-h-0 flex-1 overflow-hidden shadow-sm">
       <template #content>
         <div class="h-full min-h-0 overflow-auto">
-          <div class="planning-grid min-w-[980px]">
+          <div v-if="error" class="mb-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+            {{ error }}
+          </div>
+
+          <div v-else-if="isLoading" class="flex h-full items-center justify-center text-slate-400">
+            Cargando planning desde la API...
+          </div>
+
+          <div v-else class="planning-grid min-w-[980px]">
             <div class="planning-room-header border-b border-r border-white/10 bg-slate-900 p-4 text-3xl font-bold text-white">
               Habitacion
             </div>
@@ -43,17 +51,17 @@
             <template v-for="room in rooms" :key="room.number">
               <div class="border-b border-r border-white/10 bg-slate-900 p-4">
                 <p class="text-3xl font-bold text-white">{{ room.number }}</p>
-                <p class="mt-1 text-xl text-slate-400">{{ room.type }}</p>
-                <p :class="['mt-2 text-lg font-semibold capitalize', room.statusClass]">{{ room.status }}</p>
+                <p class="mt-1 text-xl text-slate-400">{{ room.typeName }}</p>
+                <p :class="['mt-2 text-lg font-semibold capitalize', room.statusTone]">{{ room.statusName }}</p>
               </div>
 
               <div
                 v-for="day in days"
-                :key="`${room.number}-${day.dayNumber}`"
+                :key="`${room.id}-${day.dayKey}`"
                 :class="['relative border-b border-r border-white/10 p-2', day.isToday ? 'planning-today-column' : 'bg-slate-950']"
               >
                 <div
-                  v-for="booking in getBookings(room.number, day.dayNumber)"
+                  v-for="booking in getBookings(room.id, day.dayKey)"
                   :key="booking.id"
                   :class="['planning-booking', booking.className]"
                   :style="{ width: `${booking.span * 100}%` }"
@@ -70,8 +78,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
+
+import { parseDate, toDateKey } from '../lib/backend'
+import { useHotelData } from '../composables/useHotelData'
 
 const legends = [
   { label: 'Confirmada', className: 'bg-emerald-500' },
@@ -79,37 +91,76 @@ const legends = [
   { label: 'No-Show', className: 'bg-rose-500' },
 ]
 
-const days = [
-  { weekday: 'Vie', dayNumber: 6, isToday: false },
-  { weekday: 'Sab', dayNumber: 7, isToday: false },
-  { weekday: 'Dom', dayNumber: 8, isToday: false },
-  { weekday: 'Lun', dayNumber: 9, isToday: true },
-  { weekday: 'Mar', dayNumber: 10, isToday: false },
-  { weekday: 'Mie', dayNumber: 11, isToday: false },
-  { weekday: 'Jue', dayNumber: 12, isToday: false },
-  { weekday: 'Vie', dayNumber: 13, isToday: false },
-  { weekday: 'Sab', dayNumber: 14, isToday: false },
-  { weekday: 'Dom', dayNumber: 15, isToday: false },
-  { weekday: 'Lun', dayNumber: 16, isToday: false },
-  { weekday: 'Mar', dayNumber: 17, isToday: false },
-  { weekday: 'Mie', dayNumber: 18, isToday: false },
-  { weekday: 'Jue', dayNumber: 19, isToday: false },
-]
+const { error, isLoading, reservations, rooms, refresh } = useHotelData()
 
-const rooms = [
-  { number: '101', type: 'Individual', status: 'ocupada', statusClass: 'text-blue-500' },
-  { number: '102', type: 'Doble', status: 'disponible', statusClass: 'text-emerald-500' },
-  { number: '103', type: 'Doble', status: 'ocupada', statusClass: 'text-blue-500' },
-  { number: '104', type: 'Suite', status: 'limpieza', statusClass: 'text-amber-500' },
-]
+const today = new Date()
+today.setHours(0, 0, 0, 0)
 
-const bookings = [
-  { id: 'b1', room: '101', startDay: 6, guest: 'Juan Garcia Lopez', span: 3, className: 'bg-blue-500' },
-  { id: 'b2', room: '103', startDay: 8, guest: 'Maria Fernandez Silva', span: 4, className: 'bg-blue-500' },
-  { id: 'b3', room: '104', startDay: 9, guest: 'Carlos...', span: 1, className: 'bg-rose-500' },
-]
+const days = computed(() => {
+  return Array.from({ length: 14 }, (_, index) => {
+    const day = new Date(today)
+    day.setDate(today.getDate() - 3 + index)
 
-function getBookings(roomNumber: string, dayNumber: number) {
-  return bookings.filter((booking) => booking.room === roomNumber && booking.startDay === dayNumber)
+    return {
+      dayKey: toDateKey(day),
+      weekday: new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(day),
+      dayNumber: day.getDate(),
+      monthLabel: new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(day),
+      isToday: toDateKey(day) === toDateKey(today),
+      date: day,
+    }
+  })
+})
+
+const planningBookings = computed(() => {
+  const visibleStart = days.value[0]?.date
+  const visibleEnd = days.value.at(-1)?.date
+
+  if (!visibleStart || !visibleEnd) {
+    return []
+  }
+
+  const visibleEndPlusOne = new Date(visibleEnd)
+  visibleEndPlusOne.setDate(visibleEndPlusOne.getDate() + 1)
+
+  return reservations.value.flatMap((reservation) => {
+    const startDate = parseDate(reservation.checkIn)
+    const endDate = parseDate(reservation.checkOut)
+
+    if (!startDate || !endDate || reservation.roomId === null) {
+      return []
+    }
+
+    if (endDate <= visibleStart || startDate >= visibleEndPlusOne) {
+      return []
+    }
+
+    const visibleBookingStart = startDate < visibleStart ? visibleStart : startDate
+    const visibleBookingEnd = endDate > visibleEndPlusOne ? visibleEndPlusOne : endDate
+    const span = Math.max(
+      1,
+      Math.ceil((visibleBookingEnd.getTime() - visibleBookingStart.getTime()) / (1000 * 60 * 60 * 24)),
+    )
+    const statusName = reservation.statusName.toLowerCase()
+
+    return [
+      {
+        id: reservation.id,
+        roomId: reservation.roomId,
+        guest: reservation.guestName,
+        startKey: toDateKey(visibleBookingStart),
+        span,
+        className: statusName.includes('no-show') ? 'bg-rose-500' : statusName.includes('check') ? 'bg-blue-500' : 'bg-emerald-500',
+      },
+    ]
+  })
+})
+
+function getBookings(roomId: number, dayKey: string) {
+  return planningBookings.value.filter((booking) => booking.roomId === roomId && booking.startKey === dayKey)
 }
+
+onMounted(() => {
+  refresh()
+})
 </script>

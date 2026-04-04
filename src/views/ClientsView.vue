@@ -21,43 +21,55 @@
 
     <Card class="hotel-card hotel-fill-card min-h-0 flex-1 overflow-hidden shadow-sm">
       <template #content>
-        <div class="h-full min-h-0 overflow-auto">
-        <DataTable :value="filteredClients" class="hotel-datatable" responsive-layout="scroll">
-          <Column header="CLIENTE">
-            <template #body="slotProps">
-              <div class="flex items-center gap-4 py-2">
-                <Avatar icon="pi pi-user" shape="circle" size="large" class="hotel-avatar" />
-                <div>
-                  <p class="text-2xl font-bold text-white">{{ slotProps.data.name }}</p>
-                  <p class="mt-1 text-lg text-slate-500">ID: {{ slotProps.data.id }}</p>
+        <div class="flex h-full min-h-0 flex-col gap-4">
+          <div v-if="error" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+            {{ error }}
+          </div>
+
+          <div class="h-full min-h-0 overflow-auto">
+            <DataTable :value="filteredClients" :loading="isLoading" class="hotel-datatable" responsive-layout="scroll">
+              <template #empty>
+                <div class="px-6 py-12 text-center text-base text-slate-400">
+                  {{ isLoading ? 'Cargando clientes...' : 'No hay clientes disponibles en la API.' }}
                 </div>
-              </div>
-            </template>
-          </Column>
-          <Column field="email" header="EMAIL">
-            <template #body="slotProps">
-              <div class="flex items-center gap-3 text-xl text-slate-300">
-                <i class="pi pi-envelope"></i>
-                <span>{{ slotProps.data.email }}</span>
-              </div>
-            </template>
-          </Column>
-          <Column field="phone" header="TELEFONO">
-            <template #body="slotProps">
-              <div class="flex items-center gap-3 text-xl text-slate-300">
-                <i class="pi pi-phone"></i>
-                <span>{{ slotProps.data.phone }}</span>
-              </div>
-            </template>
-          </Column>
-          <Column field="dni" header="DNI" />
-          <Column field="city" header="CIUDAD" />
-          <Column header="ACCIONES">
-            <template #body>
-              <Button label="Ver Ficha" class="hotel-primary-button hotel-small-button" />
-            </template>
-          </Column>
-        </DataTable>
+              </template>
+
+              <Column header="CLIENTE">
+                <template #body="slotProps">
+                  <div class="flex items-center gap-4 py-2">
+                    <Avatar icon="pi pi-user" shape="circle" size="large" class="hotel-avatar" />
+                    <div>
+                      <p class="text-2xl font-bold text-white">{{ slotProps.data.name }}</p>
+                      <p class="mt-1 text-lg text-slate-500">ID: {{ slotProps.data.id }}</p>
+                    </div>
+                  </div>
+                </template>
+              </Column>
+              <Column field="email" header="EMAIL">
+                <template #body="slotProps">
+                  <div class="flex items-center gap-3 text-xl text-slate-300">
+                    <i class="pi pi-envelope"></i>
+                    <span>{{ slotProps.data.email }}</span>
+                  </div>
+                </template>
+              </Column>
+              <Column field="phone" header="TELEFONO">
+                <template #body="slotProps">
+                  <div class="flex items-center gap-3 text-xl text-slate-300">
+                    <i class="pi pi-phone"></i>
+                    <span>{{ slotProps.data.phone }}</span>
+                  </div>
+                </template>
+              </Column>
+              <Column field="dni" header="DNI" />
+              <Column field="city" header="CIUDAD" />
+              <Column header="DIRECCION">
+                <template #body="slotProps">
+                  <span class="text-slate-400">{{ slotProps.data.address || 'Sin direccion' }}</span>
+                </template>
+              </Column>
+            </DataTable>
+          </div>
         </div>
       </template>
     </Card>
@@ -65,9 +77,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Avatar from 'primevue/avatar'
-import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -75,27 +86,26 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 
-const search = ref('')
+import { useHotelData } from '../composables/useHotelData'
 
-const clients = [
-  { id: 1, name: 'Juan Garcia Lopez', email: 'juan.garcia@email.com', phone: '+34 612 345 678', dni: '12345678A', city: 'Madrid' },
-  { id: 2, name: 'Maria Fernandez Silva', email: 'maria.fernandez@email.com', phone: '+34 623 456 789', dni: '23456789B', city: 'Barcelona' },
-  { id: 3, name: 'Pedro Martinez Ruiz', email: 'pedro.martinez@email.com', phone: '+34 634 567 890', dni: '34567890C', city: 'Valencia' },
-  { id: 4, name: 'Ana Lopez Perez', email: 'ana.lopez@email.com', phone: '+34 645 678 901', dni: '45678901D', city: 'Sevilla' },
-  { id: 5, name: 'Carlos Sanchez Moreno', email: 'carlos.sanchez@email.com', phone: '+34 656 789 012', dni: '56789012E', city: 'Bilbao' },
-]
+const search = ref('')
+const { clients, error, isLoading, refresh } = useHotelData()
 
 const filteredClients = computed(() => {
   const query = search.value.trim().toLowerCase()
 
   if (!query) {
-    return clients
+    return clients.value
   }
 
-  return clients.filter((client) => {
-    return [client.name, client.email, client.phone, client.dni, client.city].some((value) =>
+  return clients.value.filter((client) => {
+    return [client.name, client.email, client.phone, client.dni, client.city, client.address].some((value) =>
       value.toLowerCase().includes(query),
     )
   })
+})
+
+onMounted(() => {
+  refresh()
 })
 </script>

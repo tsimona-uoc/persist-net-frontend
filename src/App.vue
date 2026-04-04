@@ -6,7 +6,19 @@
 			</div>
 
 
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-3">
+				<div class="hidden min-w-[260px] xl:block">
+					<Select
+						:model-value="selectedHotelId"
+						@update:model-value="handleHotelChange"
+						:options="hotels"
+						option-label="name"
+						option-value="id"
+						placeholder="Selecciona hotel"
+						class="hotel-select hotel-header-select"
+						:loading="isHotelsLoading"
+					/>
+				</div>
 				<Button
 					type="button"
 					icon="pi pi-share-alt"
@@ -37,7 +49,8 @@
 						<i class="pi pi-building"></i>
 					</div>
 					<div>
-						<p class="text-4 font-semibold text-white">Hotel PMS</p>
+						<p class="text-4 font-semibold text-white">{{ selectedHotel?.name ?? 'Seleccion de hotel' }}</p>
+						<p class="mt-1 text-sm text-slate-400">{{ selectedHotel?.subtitle || hotelError || 'Selecciona el hotel operativo actual' }}</p>
 					</div>
 				</div>
 
@@ -78,15 +91,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAuth } from './composables/useAuth'
+import { useHotelContext } from './composables/useHotelContext'
 
 const route = useRoute()
 const router = useRouter()
 const { session, logout } = useAuth()
+const { error: hotelError, hotels, isLoading: isHotelsLoading, refreshHotels, selectedHotel, selectedHotelId, setSelectedHotelId } = useHotelContext()
 
 const isProtectedRoute = computed(() => route.meta.requiresAuth === true)
 const displayUser = computed(() => session.value?.email ?? 'Admin')
@@ -94,12 +110,31 @@ const displayUser = computed(() => session.value?.email ?? 'Admin')
 const navigationItems = [
 	{ label: 'Dashboard', to: '/dashboard', icon: 'pi-th-large' },
 	{ label: 'Planning', to: '/planning', icon: 'pi-calendar' },
+	{ label: 'Habitaciones', to: '/habitaciones', icon: 'pi-home' },
 	{ label: 'Clientes', to: '/clientes', icon: 'pi-users' },
+	{ label: 'Reservas', to: '/reservas', icon: 'pi-bookmark' },
 	{ label: 'Facturacion', to: '/facturacion', icon: 'pi-credit-card' },
+	{ label: 'Parametros', to: '/parametros', icon: 'pi-cog' },
 ]
 
 function handleLogout() {
 	logout()
 	router.push('/login')
 }
+
+function handleHotelChange(nextHotelId: number | null) {
+	setSelectedHotelId(nextHotelId)
+}
+
+onMounted(() => {
+	if (isProtectedRoute.value && !hotels.value.length) {
+		refreshHotels()
+	}
+})
+
+watch(isProtectedRoute, (nextValue) => {
+	if (nextValue && !hotels.value.length) {
+		refreshHotels()
+	}
+})
 </script>
