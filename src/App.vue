@@ -1,6 +1,6 @@
 <template>
-	<div v-if="isProtectedRoute" class="hotel-shell h-screen overflow-hidden text-slate-100">
-		<header class="hotel-topbar flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
+	<div v-if="isProtectedRoute" class="hotel-shell min-h-screen text-slate-100">
+		<header class="hotel-topbar sticky top-0 z-50 flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
 			<div class="flex items-center gap-3 text-sm text-white/80">
 				<span class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold tracking-[0.2em] text-white">PERSIST.NET - Hotel Management System</span>
 			</div>
@@ -30,7 +30,7 @@
 			</div>
 		</header>
 
-		<div class="flex h-[calc(100vh-64px)] min-h-0 flex-col lg:flex-row">
+		<div class="flex flex-col lg:flex-row">
 			<aside class="hotel-sidebar flex w-full shrink-0 flex-col overflow-y-auto border-r border-white/10 lg:w-[280px]">
 				<div class="flex items-center gap-4 border-b border-white/10 px-7 py-8">
 					<div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-2xl text-cyan-300">
@@ -61,8 +61,8 @@
 				</div>
 			</aside>
 
-			<main class="hotel-main flex min-h-0 flex-1 overflow-hidden px-4 py-6 sm:px-8 lg:px-9">
-				<div class="hotel-route-view flex min-h-0 w-full flex-1 overflow-hidden">
+			<main class="hotel-main min-w-0 flex-1 px-4 py-6 sm:px-8 lg:px-9">
+				<div class="hotel-route-view w-full">
 					<RouterView />
 				</div>
 			</main>

@@ -9,6 +9,7 @@ import {
   joinName,
   normalizeStatusTone,
   parseDate,
+  readBoolean,
   readDateString,
   readNumber,
   readObject,
@@ -22,11 +23,18 @@ import { useHotelContext } from './useHotelContext'
 export interface HotelClient {
   id: number
   name: string
+  nombre: string
+  apellido: string
   email: string
   phone: string
+  telefono: string
   dni: string
+  documentacion: string
   address: string
+  direccion: string
   city: string
+  ciudad: string
+  vip: boolean
 }
 
 export interface HotelRoom {
@@ -66,15 +74,25 @@ function mapClients(payload: unknown): HotelClient[] {
     const firstName = readString(item, 'nombre', 'name')
     const lastName = readString(item, 'apellido', 'surname')
     const address = readString(item, 'direccion', 'address')
+    const city = readString(item, 'ciudad', 'city')
+    const phone = readString(item, 'telefono', 'phone')
+    const dni = readString(item, 'documentacion', 'dni')
 
     return {
       id: readNumber(item, 'id') ?? 0,
       name: joinName(firstName, lastName) || `Cliente ${readNumber(item, 'id') ?? ''}`.trim(),
+      nombre: firstName || '',
+      apellido: lastName || '',
       email: readString(item, 'email') || 'Sin email',
-      phone: readString(item, 'telefono', 'phone') || 'Sin telefono',
-      dni: readString(item, 'documentacion', 'dni') || 'Sin documento',
-      address,
-      city: extractCity(address),
+      phone: phone || 'Sin telefono',
+      telefono: phone || '',
+      dni: dni || 'Sin documento',
+      documentacion: dni || '',
+      address: address || '',
+      direccion: address || '',
+      city: city || extractCity(address) || '',
+      ciudad: city || extractCity(address) || '',
+      vip: readBoolean(item, 'vip', 'Vip') || false
     }
   })
 }
