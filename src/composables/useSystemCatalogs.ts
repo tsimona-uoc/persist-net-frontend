@@ -136,8 +136,7 @@ const catalogDefinitions: CatalogSectionDefinition[] = [
     fields: [
       { key: 'name', label: 'Nombre', apiKey: 'nombre', type: 'text', required: true },
       { key: 'description', label: 'Descripcion', apiKey: 'descripcion', type: 'textarea' },
-      { key: 'price', label: 'Precio servicio', apiKey: 'precioServicio', type: 'number', required: true },
-      { key: 'active', label: 'Activo', apiKey: 'activo', type: 'boolean', defaultValue: true },
+      { key: 'price', label: 'Precio servicio', apiKey: 'precioBase', type: 'number', required: true }
     ],
   },
 ]
@@ -324,7 +323,7 @@ function buildExtraLine(
   }
 
   if (key === 'services') {
-    const price = readNumber(item, 'precioServicio')
+    const price = readNumber(item, 'precioBase')
     return price !== null ? `${price.toFixed(2)} €` : ''
   }
 

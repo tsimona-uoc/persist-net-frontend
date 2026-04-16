@@ -96,7 +96,7 @@
                 </template>
               </Column>
 
-              <Column v-if="hasExtraColumn" header="DETALLE">
+              <Column v-if="hasExtraColumn" :header="selectedSectionKey === 'services' ? 'PRECIO' : 'DETALLE'">
                 <template #body="slotProps">
                   <span class="text-slate-400">{{ slotProps.data.extra || 'Sin detalle adicional' }}</span>
                 </template>
