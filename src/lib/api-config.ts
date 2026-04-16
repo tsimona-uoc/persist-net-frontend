@@ -10,4 +10,4 @@ function normalizeApiBaseUrl(value: string): string {
 	return `${normalizedValue}/api`
 }
 
-export const API_BASE_URL = normalizeApiBaseUrl(rawApiBaseUrl || 'http://localhost:5156')
+export const API_BASE_URL = normalizeApiBaseUrl(rawApiBaseUrl || 'https://persistnet.azurewebsites.net')
