@@ -4,6 +4,7 @@ import { useAuth } from '../composables/useAuth'
 import BillingView from '../views/BillingView.vue'
 import ClientsView from '../views/ClientsView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import FolioView from '../views/FolioView.vue'
 import LoginView from '../views/LoginView.vue'
 import PlanningView from '../views/PlanningView.vue'
 import ReservationsView from '../views/ReservationsView.vue'
@@ -81,6 +82,13 @@ const router = createRouter({
         requiresAuth: true,
         section: 'estancias',
       },
+    },
+    {
+      path: '/estancias/:id/folio',
+      name: 'stay-folio',
+      component: FolioView,
+      meta: { 
+        requiresAuth: true }
     },
     {
       path: '/facturacion',

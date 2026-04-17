@@ -111,6 +111,7 @@
               <Column header="ACCIONES">
                 <template #body="slotProps">
                   <div class="flex gap-2">
+                    <Button label="Ver cuenta" icon="pi pi-file-invoice" class="hotel-outline-button" @click="goToFolio(slotProps.data.id)" />
                     <Button icon="pi pi-pencil" class="hotel-outline-button hotel-icon-button" @click="openEditDialog(slotProps.data)" />
                     <Button icon="pi pi-trash" class="hotel-danger-button hotel-icon-button" @click="handleDelete(slotProps.data.id)" />
                   </div>
@@ -162,6 +163,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
@@ -194,6 +196,7 @@ const {
   updateStay,
 } = useStayManagement()
 
+const router = useRouter()
 const search = ref('')
 const selectedStatusId = ref<number | null>(null)
 const selectedRoomId = ref<number | null>(null)
@@ -310,6 +313,10 @@ function closeDialog() {
   isDialogOpen.value = false
   editingStayId.value = null
   resetForm()
+}
+
+function goToFolio(stayId: number) {
+  router.push(`/estancias/${stayId}/folio`)
 }
 
 async function submitForm() {

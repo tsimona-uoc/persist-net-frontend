@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 import { extractCollection, readBoolean, readDateString, readNumber, readObject, readString } from '../lib/backend'
 import { useApi } from './useApi'
 
-// Interfaces adaptadas a la vista del Folio
 export interface FolioLine {
   id: number
   concepto: string
@@ -27,48 +26,61 @@ export interface ExtraServiceOption {
 export function useStayFolio() {
   const { request } = useApi()
 
-  // Estado
   const stayId = ref<number | null>(null)
   const invoiceId = ref<number | null>(null)
   
   const lines = ref<FolioLine[]>([])
   const payments = ref<FolioPayment[]>([])
   
-  // Catálogos para los modales de añadir cargo/pago
   const extraServices = ref<ExtraServiceOption[]>([])
   const paymentMethods = ref<{ id: number, name: string }[]>([])
   
-  // Datos del cliente para la cabecera
   const clientVip = ref<boolean>(false)
   const clientName = ref<string>('')
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Totales Calculados (La Magia de Vue)
   const totalCargos = computed(() => lines.value.reduce((sum, line) => sum + line.monto, 0))
   const totalPagos = computed(() => payments.value.reduce((sum, payment) => sum + payment.monto, 0))
   const saldoPendiente = computed(() => totalCargos.value - totalPagos.value)
   const isPaid = computed(() => saldoPendiente.value === 0 && totalCargos.value > 0)
 
-  /**
-   * Carga todo el contexto de una estancia específica
-   */
+  
   async function loadFolio(targetStayId: number) {
     isLoading.value = true
     error.value = null
     stayId.value = targetStayId
 
     try {
-      // 1. Obtener datos de la Estancia (para sacar Reserva -> Cliente)
       const stayPayload = await request<Record<string, unknown>>(`/estancia/${targetStayId}`)
-      const reserva = readObject(stayPayload, 'reserva')
-      const cliente = readObject(reserva, 'cliente')
+      const reservaId = readNumber(stayPayload, 'reservaId') ?? readNumber(readObject(stayPayload, 'reserva'), 'id')
       
-      clientName.value = `${readString(cliente, 'nombre')} ${readString(cliente, 'apellido')}`.trim()
-      clientVip.value = readBoolean(cliente, 'vip') || false
+      let idCliente = 0
+      let diasEstancia = 1
 
-      // 2. Buscar la factura de esta estancia (Asumimos 1 Estancia = 1 Factura)
+      if (reservaId) {
+        const reservaPayload = await request<Record<string, unknown>>(`/reserva/${reservaId}`)
+        idCliente = readNumber(reservaPayload, 'clienteId') ?? readNumber(readObject(reservaPayload, 'cliente'), 'id') ?? 0
+        
+        const fEntrada = new Date(readString(reservaPayload, 'fechaEntrada') || '')
+        const fSalida = new Date(readString(reservaPayload, 'fechaSalida') || '')
+        if (!isNaN(fEntrada.getTime()) && !isNaN(fSalida.getTime())) {
+           const diff = Math.ceil(Math.abs(fSalida.getTime() - fEntrada.getTime()) / (1000 * 60 * 60 * 24))
+           if (diff > 0) diasEstancia = diff
+        }
+
+        if (idCliente) {
+          const clientePayload = await request<Record<string, unknown>>(`/cliente/${idCliente}`)
+          clientName.value = `${readString(clientePayload, 'nombre')} ${readString(clientePayload, 'apellido')}`.trim()
+          clientVip.value = readBoolean(clientePayload, 'vip') || false
+        }
+      }
+
+      if (!clientName.value) clientName.value = 'Huésped desconocido'
+
+      await loadCatalogs()
+
       const invoicesPayload = await request('/factura')
       const invoice = extractCollection(invoicesPayload).find(f => 
         readNumber(f, 'estanciaId') === targetStayId || 
@@ -79,12 +91,8 @@ export function useStayFolio() {
         invoiceId.value = readNumber(invoice, 'id')
         await loadInvoiceDetails(invoiceId.value!)
       } else {
-        // Si no hay factura, la creamos automáticamente (Ideal para el KISS)
-        await createInitialInvoice(targetStayId, readNumber(cliente, 'id')!)
+        await createInitialInvoice(targetStayId, idCliente, diasEstancia)
       }
-
-      // 3. Cargar catálogos para los dropdowns
-      await loadCatalogs()
 
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error al cargar el folio.'
@@ -94,8 +102,6 @@ export function useStayFolio() {
   }
 
   async function loadInvoiceDetails(idFactura: number) {
-    // NOTA: Reemplaza '/facturalinea' por el endpoint real que crees en tu backend
-    // Si aún no lo tienes, el array `lines` quedará vacío por ahora, no dará error.
     try {
       const linesPayload = await request(`/facturalinea`)
       lines.value = extractCollection(linesPayload)
@@ -138,23 +144,26 @@ export function useStayFolio() {
     }))
   }
 
-  async function createInitialInvoice(idEstancia: number, idCliente: number) {
-    // Si la estancia no tenía factura, creamos el "Borrador"
-    await request('/factura', {
+  async function createInitialInvoice(idEstancia: number, idCliente: number, noches: number) {
+    const newInvoice = await request<Record<string, unknown>>('/factura', {
       method: 'POST',
       body: JSON.stringify({
         estanciaId: idEstancia,
-        clienteId: idCliente,
-        montoTotal: 0
+        clienteId: idCliente > 0 ? idCliente : 1, // Fallback de seguridad
+        total: 0
       })
     })
-    // Recargamos para obtener el ID asignado
-    await loadFolio(idEstancia)
+
+    invoiceId.value = readNumber(newInvoice, 'id')
+
+    if (invoiceId.value) {
+      await addCharge(`Alojamiento (${noches} noches)`, noches * 80)
+    }
   }
 
   async function addCharge(concepto: string, monto: number) {
     if (!invoiceId.value) return
-    await request('/facturalinea', { // Endpoint a implementar en C#
+    await request('/facturalinea', { 
       method: 'POST',
       body: JSON.stringify({ facturaId: invoiceId.value, concepto, monto, fecha: new Date().toISOString() })
     })
