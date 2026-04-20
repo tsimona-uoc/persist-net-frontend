@@ -101,7 +101,13 @@
 
           <div class="mt-6 flex flex-col gap-4 sm:flex-row">
             <Button label="Actualizar datos" class="hotel-success-button flex-1" @click="refresh" />
-            <Button label="Imprimir" outlined class="hotel-outline-button sm:w-44" disabled />
+            <Button
+              label="Imprimir"
+              outlined
+              class="hotel-outline-button sm:w-44"
+              :disabled="!selectedInvoice || isLoading || isPrinting"
+              @click="handlePrint"
+            />
           </div>
         </template>
       </Card>
@@ -117,9 +123,13 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
 import { useBillingData } from '../composables/useBillingData'
+import { useApi } from '../composables/useApi'
+import { extractCollection, formatCurrency, formatShortDate, readDateString, readNumber, readString, toRecord } from '../lib/backend'
 
 const { error, invoices, isLoading, paymentMethods, payments, refresh } = useBillingData()
+const { request } = useApi()
 const selectedInvoiceId = ref<number | null>(null)
+const isPrinting = ref(false)
 
 const selectedInvoice = computed(() => {
   return invoices.value.find((invoice) => invoice.id === selectedInvoiceId.value) ?? null
@@ -151,4 +161,190 @@ watch(
 onMounted(() => {
   refresh()
 })
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function buildInvoiceHtml(payload: {
+  invoiceId: number
+  clientName: string
+  roomNumber: string
+  issueDate: string
+  totalLabel: string
+  lines: Array<{ concepto: string, amountLabel: string, dateLabel: string }>
+  payments: Array<{ methodName: string, amountLabel: string, dateLabel: string }>
+}): string {
+  const linesHtml = payload.lines.length
+    ? payload.lines
+        .map(
+          (line) =>
+            `<tr><td>${escapeHtml(line.dateLabel)}</td><td>${escapeHtml(line.concepto)}</td><td class="num">${escapeHtml(line.amountLabel)}</td></tr>`
+        )
+        .join('')
+    : '<tr><td colspan="3" class="empty">Sin conceptos registrados.</td></tr>'
+
+  const paymentsHtml = payload.payments.length
+    ? payload.payments
+        .map(
+          (payment) =>
+            `<tr><td>${escapeHtml(payment.dateLabel)}</td><td>${escapeHtml(payment.methodName)}</td><td class="num">${escapeHtml(payment.amountLabel)}</td></tr>`
+        )
+        .join('')
+    : '<tr><td colspan="3" class="empty">Sin pagos registrados.</td></tr>'
+
+  return `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Factura #${payload.invoiceId}</title>
+    <style>
+      :root { color-scheme: light; }
+      body { font-family: "Segoe UI", Arial, sans-serif; margin: 32px; color: #0f172a; }
+      h1 { font-size: 24px; margin: 0 0 8px; }
+      h2 { font-size: 16px; margin: 24px 0 8px; color: #0f172a; }
+      .meta { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 14px; }
+      .meta strong { display: block; font-size: 15px; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+      .num { text-align: right; }
+      .total { font-size: 18px; font-weight: 700; text-align: right; margin-top: 12px; }
+      .empty { text-align: center; color: #64748b; padding: 16px; }
+      @media print { body { margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <h1>Factura #${payload.invoiceId}</h1>
+    <div class="meta">
+      <div>
+        <strong>${escapeHtml(payload.clientName)}</strong>
+        Habitacion ${escapeHtml(payload.roomNumber)}
+      </div>
+      <div>
+        Fecha: ${escapeHtml(payload.issueDate)}
+      </div>
+    </div>
+
+    <h2>Conceptos</h2>
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Concepto</th><th class="num">Importe</th></tr>
+      </thead>
+      <tbody>
+        ${linesHtml}
+      </tbody>
+    </table>
+
+    <h2>Pagos</h2>
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Metodo</th><th class="num">Importe</th></tr>
+      </thead>
+      <tbody>
+        ${paymentsHtml}
+      </tbody>
+    </table>
+
+    <div class="total">Total: ${escapeHtml(payload.totalLabel)}</div>
+  </body>
+</html>`
+}
+
+function printHtml(html: string) {
+  const iframe = document.createElement('iframe')
+  iframe.style.position = 'fixed'
+  iframe.style.right = '0'
+  iframe.style.bottom = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+
+  document.body.appendChild(iframe)
+
+  const doc = iframe.contentWindow?.document
+  if (!doc) {
+    document.body.removeChild(iframe)
+    throw new Error('No se pudo crear el documento de impresion.')
+  }
+
+  doc.open()
+  doc.write(html)
+  doc.close()
+
+  let printed = false
+  const finalize = () => {
+    if (printed) {
+      return
+    }
+
+    printed = true
+    iframe.contentWindow?.focus()
+    iframe.contentWindow?.print()
+    window.setTimeout(() => {
+      document.body.removeChild(iframe)
+    }, 300)
+  }
+
+  iframe.onload = finalize
+  window.setTimeout(finalize, 200)
+}
+
+async function handlePrint() {
+  if (!selectedInvoice.value || isPrinting.value) {
+    return
+  }
+
+  isPrinting.value = true
+
+  try {
+    const invoiceId = selectedInvoice.value.id
+    const [invoicePayload, linesPayload] = await Promise.all([
+      request(`/factura/${invoiceId}`),
+      request(`/facturalinea/factura/${invoiceId}`),
+    ])
+
+    const issueDate = formatShortDate(readDateString(toRecord(invoicePayload), 'fechaEmision') || '')
+
+    const lines = extractCollection(linesPayload).map((item) => {
+      const concepto = readString(item, 'concepto', 'descripcion') || 'Cargo'
+      const amount = readNumber(item, 'monto', 'precio') ?? 0
+      const dateLabel = formatShortDate(readDateString(item, 'fecha', 'createdAt'))
+
+      return {
+        concepto,
+        amountLabel: formatCurrency(amount),
+        dateLabel,
+      }
+    })
+
+    const paymentsSnapshot = selectedInvoicePayments.value.map((payment) => ({
+      methodName: payment.methodName,
+      amountLabel: payment.amountLabel,
+      dateLabel: payment.paymentDate,
+    }))
+
+    const finalHtml = buildInvoiceHtml({
+      invoiceId,
+      clientName: selectedInvoice.value.clientName,
+      roomNumber: selectedInvoice.value.roomNumber,
+      issueDate: issueDate || 'Sin fecha',
+      totalLabel: selectedInvoice.value.totalLabel,
+      lines,
+      payments: paymentsSnapshot,
+    })
+
+    printHtml(finalHtml)
+  } catch (printError) {
+    console.error(printError)
+    alert('No se pudo generar la factura para imprimir.')
+  } finally {
+    isPrinting.value = false
+  }
+}
 </script>
