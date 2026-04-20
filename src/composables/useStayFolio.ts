@@ -4,6 +4,7 @@ import { useApi } from './useApi'
 
 export interface FolioLine {
   id: number
+  facturaId: number
   concepto: string
   monto: number
   fecha: string
@@ -22,6 +23,9 @@ export interface ExtraServiceOption {
   name: string
   price: number
 }
+
+export const LODGING_CONCEPT_PREFIX = 'Alojamiento'
+export const VIP_DISCOUNT_CONCEPT = 'Descuento de Fidelidad VIP (10%)'
 
 export function useStayFolio() {
   const { request } = useApi()
@@ -45,6 +49,68 @@ export function useStayFolio() {
   const totalPagos = computed(() => payments.value.reduce((sum, payment) => sum + payment.monto, 0))
   const saldoPendiente = computed(() => totalCargos.value - totalPagos.value)
   const isPaid = computed(() => saldoPendiente.value === 0 && totalCargos.value > 0)
+
+  function normalizeConcept(value: string): string {
+    return value.trim().toLowerCase()
+  }
+
+  function isDiscountLine(line: FolioLine): boolean {
+    return normalizeConcept(line.concepto) === normalizeConcept(VIP_DISCOUNT_CONCEPT)
+  }
+
+  function isLodgingLine(line: FolioLine): boolean {
+    return normalizeConcept(line.concepto).startsWith(normalizeConcept(LODGING_CONCEPT_PREFIX))
+  }
+
+  function calculateVipDiscountAmount(): number {
+    const baseTotal = lines.value
+      .filter((line) => !isDiscountLine(line))
+      .reduce((sum, line) => sum + line.monto, 0)
+
+    return Number((baseTotal * 0.1).toFixed(2))
+  }
+
+  async function updateFacturaLine(line: FolioLine, monto: number) {
+    await request(`/facturalinea/${line.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: line.id,
+        facturaId: line.facturaId,
+        concepto: line.concepto,
+        monto,
+        fecha: line.fecha || new Date().toISOString(),
+      }),
+    })
+  }
+
+  async function syncVipDiscountLine() {
+    if (!invoiceId.value) {
+      return
+    }
+
+    const discountLines = lines.value.filter(isDiscountLine)
+    if (discountLines.length === 0) {
+      return
+    }
+
+    const [primaryLine, ...extraLines] = discountLines
+    if (extraLines.length > 0) {
+      await Promise.all(extraLines.map((line) => request(`/facturalinea/${line.id}`, { method: 'DELETE' })))
+      await loadInvoiceDetails(invoiceId.value)
+      await syncVipDiscountLine()
+      return
+    }
+
+    const discountAmount = calculateVipDiscountAmount()
+    const desiredAmount = -discountAmount
+
+    if (Math.abs(primaryLine.monto - desiredAmount) < 0.01) {
+      return
+    }
+
+    await updateFacturaLine(primaryLine, desiredAmount)
+    await loadInvoiceDetails(invoiceId.value)
+  }
 
   
   async function loadFolio(targetStayId: number) {
@@ -90,6 +156,7 @@ export function useStayFolio() {
       if (invoice) {
         invoiceId.value = readNumber(invoice, 'id')
         await loadInvoiceDetails(invoiceId.value!)
+        await syncVipDiscountLine()
       } else {
         await createInitialInvoice(targetStayId, idCliente, diasEstancia)
       }
@@ -108,6 +175,7 @@ export function useStayFolio() {
         .filter(l => readNumber(l, 'facturaId') === idFactura)
         .map(item => ({
           id: readNumber(item, 'id') || 0,
+          facturaId: readNumber(item, 'facturaId') || idFactura,
           concepto: readString(item, 'concepto', 'descripcion') || 'Cargo',
           monto: readNumber(item, 'monto', 'precio') || 0,
           fecha: readDateString(item, 'fecha', 'createdAt') || new Date().toISOString()
@@ -121,7 +189,7 @@ export function useStayFolio() {
         id: readNumber(item, 'id') || 0,
         metodoPagoId: readNumber(item, 'metodoPagoId') || 0,
         metodoNombre: readString(readObject(item, 'metodoPago'), 'nombre') || 'Pago',
-        monto: readNumber(item, 'montoSaldo', 'monto') || 0,
+        monto: readNumber(item, 'importe', 'montoSaldo', 'monto') || 0,
         fecha: readDateString(item, 'fechaPago', 'fecha') || new Date().toISOString()
       }))
   }
@@ -150,7 +218,9 @@ export function useStayFolio() {
       body: JSON.stringify({
         estanciaId: idEstancia,
         clienteId: idCliente > 0 ? idCliente : 1, // Fallback de seguridad
-        total: 0
+        total: 0,
+        pagada: false,
+        descuento: 0
       })
     })
 
@@ -168,13 +238,39 @@ export function useStayFolio() {
       body: JSON.stringify({ facturaId: invoiceId.value, concepto, monto, fecha: new Date().toISOString() })
     })
     await loadInvoiceDetails(invoiceId.value)
+    await syncVipDiscountLine()
+  }
+
+  async function removeCharge(line: FolioLine) {
+    if (!invoiceId.value || isLodgingLine(line)) return
+
+    await request(`/facturalinea/${line.id}`, { method: 'DELETE' })
+    await loadInvoiceDetails(invoiceId.value)
+    await syncVipDiscountLine()
+  }
+
+  async function applyVipDiscount() {
+    if (!clientVip.value || !invoiceId.value) return
+
+    const discountLine = lines.value.find(isDiscountLine)
+    if (discountLine) {
+      await syncVipDiscountLine()
+      return
+    }
+
+    const discountAmount = calculateVipDiscountAmount()
+    if (discountAmount <= 0) {
+      return
+    }
+
+    await addCharge(VIP_DISCOUNT_CONCEPT, -discountAmount)
   }
 
   async function addPayment(metodoPagoId: number, monto: number) {
     if (!invoiceId.value) return
     await request('/pago', {
       method: 'POST',
-      body: JSON.stringify({ facturaId: invoiceId.value, metodoPagoId, montoSaldo: monto, fechaPago: new Date().toISOString() })
+      body: JSON.stringify({ facturaId: invoiceId.value, metodoPagoId, importe: monto, fechaPago: new Date().toISOString() })
     })
     await loadInvoiceDetails(invoiceId.value)
   }
@@ -193,6 +289,8 @@ export function useStayFolio() {
     paymentMethods,
     loadFolio,
     addCharge,
-    addPayment
+    removeCharge,
+    addPayment,
+    applyVipDiscount
   }
 }

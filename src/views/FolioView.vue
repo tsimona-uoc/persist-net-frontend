@@ -52,6 +52,19 @@
                   <span :class="data.monto < 0 ? 'text-emerald-400' : ''">{{ formatCurrency(data.monto) }}</span>
                 </template>
               </Column>
+              <Column header="Acciones" class="text-right" :style="{ width: '90px' }">
+                <template #body="{ data }">
+                  <Button
+                    icon="pi pi-trash"
+                    text
+                    rounded
+                    severity="danger"
+                    :disabled="isLodgingLine(data)"
+                    @click="confirmRemoveCharge(data)"
+                    aria-label="Eliminar cargo"
+                  />
+                </template>
+              </Column>
             </DataTable>
           </div>
           <div class="mt-6 flex gap-3 border-t border-white/10 pt-6">
@@ -62,6 +75,7 @@
               icon="pi pi-star" 
               severity="warn"
               outlined
+              :disabled="hasVipDiscount"
               @click="applyVipDiscount" 
             />
           </div>
@@ -161,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
@@ -173,7 +187,7 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 
 import { formatCurrency, formatShortDate } from '../lib/backend'
-import { useStayFolio, type ExtraServiceOption } from '../composables/useStayFolio'
+import { useStayFolio, type ExtraServiceOption, type FolioLine, LODGING_CONCEPT_PREFIX, VIP_DISCOUNT_CONCEPT } from '../composables/useStayFolio'
 
 const route = useRoute()
 const router = useRouter()
@@ -181,7 +195,7 @@ const stayId = Number(route.params.id)
 
 const {
   clientName, clientVip, lines, payments, totalCargos, totalPagos, saldoPendiente, isPaid,
-  extraServices, paymentMethods, loadFolio, addCharge, addPayment
+  extraServices, paymentMethods, loadFolio, addCharge, removeCharge, addPayment, applyVipDiscount
 } = useStayFolio()
 
 const showChargeDialog = ref(false)
@@ -190,6 +204,10 @@ const showPaymentDialog = ref(false)
 const selectedService = ref<ExtraServiceOption | null>(null)
 const newCharge = ref({ concepto: '', monto: 0 })
 const newPayment = ref({ metodoId: null as number | null, monto: 0 })
+
+const hasVipDiscount = computed(() => {
+  return lines.value.some((line) => normalizeConcept(line.concepto) === normalizeConcept(VIP_DISCOUNT_CONCEPT))
+})
 
 onMounted(() => {
   if (stayId) {
@@ -211,9 +229,22 @@ async function submitCharge() {
   selectedService.value = null
 }
 
-async function applyVipDiscount() {
-  const discountAmount = totalCargos.value * 0.10
-  await addCharge('Descuento de Fidelidad VIP (10%)', -discountAmount)
+function normalizeConcept(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+function isLodgingLine(line: { concepto: string }): boolean {
+  return normalizeConcept(line.concepto).startsWith(normalizeConcept(LODGING_CONCEPT_PREFIX))
+}
+
+async function confirmRemoveCharge(line: FolioLine) {
+  if (isLodgingLine(line)) {
+    return
+  }
+
+  if (confirm('¿Deseas eliminar este cargo?')) {
+    await removeCharge(line)
+  }
 }
 
 function openPaymentDialog() {
