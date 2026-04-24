@@ -6,6 +6,7 @@ import ClientsView from '../views/ClientsView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import FolioView from '../views/FolioView.vue'
 import LoginView from '../views/LoginView.vue'
+import OdooExportView from '../views/OdooExportView.vue'
 import PlanningView from '../views/PlanningView.vue'
 import ReservationsView from '../views/ReservationsView.vue'
 import RoomsView from '../views/RoomsView.vue'
@@ -108,6 +109,15 @@ const router = createRouter({
         section: 'parametros',
       },
     },
+    {
+      path: '/exportar-odoo',
+      name: 'odoo-export',
+      component: OdooExportView,
+      meta: {
+        requiresAuth: true,
+        section: 'odoo-export',
+      },
+    }
   ],
 })
 

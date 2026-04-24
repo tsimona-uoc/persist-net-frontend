@@ -103,6 +103,7 @@ const navigationItems = [
 	{ label: 'Reservas', to: '/reservas', icon: 'pi-bookmark' },
 	{ label: 'Estancias', to: '/estancias', icon: 'pi-briefcase' },
 	{ label: 'Facturacion', to: '/facturacion', icon: 'pi-credit-card' },
+	{ label: 'Odoo', to: '/exportar-odoo', icon: 'pi pi-file-export' },
 	{ label: 'Parametros', to: '/parametros', icon: 'pi-cog' },
 ]
 
