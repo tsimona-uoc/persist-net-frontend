@@ -89,6 +89,9 @@
           <div v-if="successMessage" class="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-5 text-emerald-100 animate-fade-in">
             <p class="font-medium flex items-center gap-3 text-lg"><i class="pi pi-check-circle text-emerald-400 text-xl"></i> {{ successMessage }}</p>
             <div v-if="detailMessage" class="mt-4 ml-8 rounded-xl bg-slate-900/50 border border-emerald-400/10 p-4 font-mono text-sm text-emerald-300/80 whitespace-pre-wrap">{{ detailMessage }}</div>
+            <div v-if="downloadFileName" class="mt-4 ml-8 flex gap-3">
+              <Button @click="downloadOdooFile" :loading="isDownloading" icon="pi pi-download" label="Descargar Archivo" class="hotel-primary-button px-6 py-2" />
+            </div>
           </div>
 
           <div v-if="errorMessage" class="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-5 text-rose-100 animate-fade-in">
@@ -153,6 +156,8 @@ const isLoading = ref<boolean>(false);
 const successMessage = ref<string>('');
 const detailMessage = ref<string>('');
 const errorMessage = ref<string>('');
+const downloadFileName = ref<string>('');
+const isDownloading = ref<boolean>(false);
 
 // Estados para la Importación
 const isImportLoading = ref<boolean>(false);
@@ -189,7 +194,13 @@ const exportToOdoo = async () => {
     }
 
     successMessage.value = data.mensaje;
-    detailMessage.value = data.detalle; 
+    detailMessage.value = data.detalle;
+    
+    // Extraer el nombre del archivo desde el detalle (busca patrones como "odoo_*.xml")
+    const fileNameMatch = data.detalle?.match(/odoo[^"'\s]*.xml/i);
+    if (fileNameMatch) {
+      downloadFileName.value = fileNameMatch[0];
+    }
     
   } catch (error: any) {
     errorMessage.value = error.message || 'No se pudo conectar con el servidor backend.';
@@ -242,6 +253,46 @@ const importFromOdoo = async () => {
     importErrorMessage.value = error.message || 'No se pudo conectar con el servidor backend.';
   } finally {
     isImportLoading.value = false;
+  }
+};
+
+const downloadOdooFile = async () => {
+  if (!downloadFileName.value) return;
+
+  isDownloading.value = true;
+  
+  try {
+    const token = localStorage.getItem('jwt_token') || '';
+
+    const response = await fetch(`${API_BASE_URL}/download-odoo/${encodeURIComponent(downloadFileName.value)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al descargar el archivo');
+    }
+
+    // Obtener el blob del archivo
+    const blob = await response.blob();
+
+    // Crear un URL temporal y simular descarga
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = downloadFileName.value;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+  } catch (error: any) {
+    errorMessage.value = error.message || 'No se pudo descargar el archivo';
+  } finally {
+    isDownloading.value = false;
   }
 };
 </script>
