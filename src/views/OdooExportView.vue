@@ -196,10 +196,12 @@ const exportToOdoo = async () => {
     successMessage.value = data.mensaje;
     detailMessage.value = data.detalle;
     
-    // Extraer el nombre del archivo desde el detalle (busca patrones como "odoo_*.xml")
-    const fileNameMatch = data.detalle?.match(/odoo[^"'\s]*.xml/i);
-    if (fileNameMatch) {
-      downloadFileName.value = fileNameMatch[0];
+    // Usar el nombreArchivo directamente del backend
+    if (data.nombreArchivo) {
+      downloadFileName.value = data.nombreArchivo;
+      console.log('Nombre del archivo recibido:', downloadFileName.value);
+    } else {
+      console.warn('No se recibió nombreArchivo en la respuesta:', data);
     }
     
   } catch (error: any) {
@@ -257,14 +259,21 @@ const importFromOdoo = async () => {
 };
 
 const downloadOdooFile = async () => {
-  if (!downloadFileName.value) return;
+  if (!downloadFileName.value) {
+    errorMessage.value = 'No se ha capturado el nombre del archivo para descargar';
+    return;
+  }
 
   isDownloading.value = true;
   
   try {
     const token = localStorage.getItem('jwt_token') || '';
+    const encodedFileName = encodeURIComponent(downloadFileName.value);
+    const downloadUrl = `${API_BASE_URL}/download-odoo/${encodedFileName}`;
+    
+    console.log('Intentando descargar:', downloadUrl);
 
-    const response = await fetch(`${API_BASE_URL}/download-odoo/${encodeURIComponent(downloadFileName.value)}`, {
+    const response = await fetch(downloadUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -272,8 +281,14 @@ const downloadOdooFile = async () => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al descargar el archivo');
+      let errorMessage = `Error ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // Si no es JSON, usar el mensaje por defecto
+      }
+      throw new Error(errorMessage);
     }
 
     // Obtener el blob del archivo
@@ -289,8 +304,11 @@ const downloadOdooFile = async () => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
     
+    successMessage.value += ' ✓ Archivo descargado correctamente';
+    
   } catch (error: any) {
-    errorMessage.value = error.message || 'No se pudo descargar el archivo';
+    errorMessage.value = `Error en la descarga: ${error.message}`;
+    console.error('Error al descargar archivo:', error);
   } finally {
     isDownloading.value = false;
   }
