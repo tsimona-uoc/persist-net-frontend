@@ -141,6 +141,8 @@ import Card from 'primevue/card';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 
+import { API_BASE_URL } from '../lib/api-config';
+
 const form = reactive({
   nombreLote: 'Lote_' + new Date().toISOString().split('T')[0], // Sugerencia de nombre por defecto
   fechaInicio: '',
@@ -158,8 +160,6 @@ const importSuccessMessage = ref<string>('');
 const importErrorMessage = ref<string>('');
 const selectedFile = ref<File | null>(null);
 
-const API_URL = 'https://localhost:7151/api';
-
 const exportToOdoo = async () => {
   isLoading.value = true;
   successMessage.value = '';
@@ -169,7 +169,7 @@ const exportToOdoo = async () => {
   try {
     const token = localStorage.getItem('jwt_token') || '';
 
-    const response = await fetch(`${API_URL}/exportar/odoo`, {
+    const response = await fetch(`${API_BASE_URL}/exportar/odoo`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ const importFromOdoo = async () => {
     const formData = new FormData();
     formData.append('file', selectedFile.value);
 
-    const response = await fetch(`${API_URL}/importar/xml`, {
+    const response = await fetch(`${API_BASE_URL}/importar/xml`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}` 
