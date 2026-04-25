@@ -269,7 +269,7 @@ const downloadOdooFile = async () => {
   try {
     const token = localStorage.getItem('jwt_token') || '';
     const encodedFileName = encodeURIComponent(downloadFileName.value);
-    const downloadUrl = `${API_BASE_URL}/download-odoo/${encodedFileName}`;
+    const downloadUrl = `${API_BASE_URL}/exportar/download-odoo/${encodedFileName}`;
     
     console.log('Intentando descargar:', downloadUrl);
 
