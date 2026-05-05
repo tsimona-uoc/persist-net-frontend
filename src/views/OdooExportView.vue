@@ -108,17 +108,17 @@
         <div class="flex h-full min-h-0 flex-col gap-6 max-w-4xl pt-2">
           <div>
             <h2 class="text-2xl font-semibold text-white">Importar desde Odoo</h2>
-            <p class="text-slate-400 mt-2 text-sm">Sube un archivo XML generado en Odoo para importar o actualizar los registros en HotelSOL.</p>
+            <p class="text-slate-400 mt-2 text-sm">Sube un archivo XLSX generado en Odoo para importar o actualizar los registros en HotelSOL.</p>
           </div>
           
           <form @submit.prevent="importFromOdoo" class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2 md:col-span-2">
-              <label class="text-sm font-semibold text-slate-300">Archivo XML <span class="text-cyan-400">*</span></label>
-              <input type="file" accept=".xml" @change="handleFileChange" required class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-400/10 file:text-cyan-400 hover:file:bg-cyan-400/20 cursor-pointer border border-white/10 rounded-md bg-slate-900/50" />
+              <label class="text-sm font-semibold text-slate-300">Archivo XLSX <span class="text-cyan-400">*</span></label>
+              <input type="file" accept=".xlsx" @change="handleFileChange" required class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-400/10 file:text-cyan-400 hover:file:bg-cyan-400/20 cursor-pointer border border-white/10 rounded-md bg-slate-900/50" />
             </div>
 
             <div class="pt-2 md:col-span-2">
-              <Button type="submit" :loading="isImportLoading" :disabled="!selectedFile" label="Importar Archivo XML" icon="pi pi-cloud-download" class="hotel-outline-button w-full sm:w-auto px-8 py-3" />
+              <Button type="submit" :loading="isImportLoading" :disabled="!selectedFile" label="Importar Archivo XLSX" icon="pi pi-cloud-download" class="hotel-outline-button w-full sm:w-auto px-8 py-3" />
             </div>
           </form>
 
@@ -145,6 +145,9 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 
 import { API_BASE_URL } from '../lib/api-config';
+import { useAuth } from '../composables/useAuth';
+
+const { session } = useAuth()
 
 const form = reactive({
   nombreLote: 'Lote_' + new Date().toISOString().split('T')[0], // Sugerencia de nombre por defecto
@@ -172,13 +175,12 @@ const exportToOdoo = async () => {
   errorMessage.value = '';
 
   try {
-    const token = localStorage.getItem('jwt_token') || '';
 
     const response = await fetch(`${API_BASE_URL}/exportar/odoo`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` 
+        'Authorization': `Bearer ${session.value?.token}` 
       },
       body: JSON.stringify({
         nombreLote: form.nombreLote,
@@ -228,14 +230,13 @@ const importFromOdoo = async () => {
   importErrorMessage.value = '';
 
   try {
-    const token = localStorage.getItem('jwt_token') || '';
     const formData = new FormData();
     formData.append('file', selectedFile.value);
 
-    const response = await fetch(`${API_BASE_URL}/importar/xml`, {
+    const response = await fetch(`${API_BASE_URL}/importar/xlsx`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}` 
+        'Authorization': `Bearer ${session.value?.token}` 
         // Nota importante: NO añadimos 'Content-Type' aquí. 
         // Fetch lo pone automáticamente como 'multipart/form-data' al detectar un objeto FormData.
       },
@@ -245,11 +246,11 @@ const importFromOdoo = async () => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Error al importar el archivo XML.');
+      throw new Error(data.error || 'Error al importar el archivo XLSX.');
     }
 
     // Formatear el resultado si la API devuelve estadísticas de inserción, o mensaje genérico
-    importSuccessMessage.value = data.message || 'El archivo XML se ha procesado e importado correctamente en la base de datos de HotelSOL.';
+    importSuccessMessage.value = data.message || 'El archivo XLSX se ha procesado e importado correctamente en la base de datos de HotelSOL.';
     
   } catch (error: any) {
     importErrorMessage.value = error.message || 'No se pudo conectar con el servidor backend.';
